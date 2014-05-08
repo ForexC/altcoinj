@@ -18,7 +18,7 @@ package com.google.bitcoin.protocols.channels;
 
 import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.InsufficientMoneyException;
-import com.google.bitcoin.core.Sha256Hash;
+import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.net.NioClient;
 import com.google.bitcoin.net.ProtobufParser;
@@ -63,7 +63,7 @@ public class PaymentChannelClientConnection {
                                           BigInteger maxValue, String serverId) throws IOException, ValueOutOfRangeException {
         // Glue the object which vends/ingests protobuf messages in order to manage state to the network object which
         // reads/writes them to the wire in length prefixed form.
-        channelClient = new PaymentChannelClient(wallet, myKey, maxValue, Sha256Hash.create(serverId.getBytes()),
+        channelClient = new PaymentChannelClient(wallet, myKey, maxValue, Hash.create(serverId.getBytes()),
               new PaymentChannelClient.ClientConnection() {
             @Override
             public void sendToServer(Protos.TwoWayChannelMessage msg) {

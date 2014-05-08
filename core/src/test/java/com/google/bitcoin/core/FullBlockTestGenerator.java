@@ -22,10 +22,10 @@ class BlockAndValidity extends Rule {
     Block block;
     boolean connects;
     boolean throwsException;
-    Sha256Hash hashChainTipAfterBlock;
+    Hash hashChainTipAfterBlock;
     int heightAfterBlock;
 
-    public BlockAndValidity(Map<Sha256Hash, Integer> blockToHeightMap, Block block, boolean connects, boolean throwsException, Sha256Hash hashChainTipAfterBlock, int heightAfterBlock, String blockName) {
+    public BlockAndValidity(Map<Hash, Integer> blockToHeightMap, Block block, boolean connects, boolean throwsException, Hash hashChainTipAfterBlock, int heightAfterBlock, String blockName) {
         super(blockName);
         if (connects && throwsException)
             throw new RuntimeException("A block cannot connect if an exception was thrown while adding it.");
@@ -90,7 +90,7 @@ public class FullBlockTestGenerator {
     private byte[] coinbaseOutKeyPubKey;
     
     // Used to double-check that we are always using the right next-height
-    private Map<Sha256Hash, Integer> blockToHeightMap = new HashMap<Sha256Hash, Integer>();
+    private Map<Hash, Integer> blockToHeightMap = new HashMap<Hash, Integer>();
     
     public FullBlockTestGenerator(NetworkParameters params) {
         this.params = params;
@@ -738,7 +738,7 @@ public class FullBlockTestGenerator {
 
                 if (scriptSig == null) {
                     // Exploit the SigHash.SINGLE bug to avoid having to make more than one signature
-                    Sha256Hash hash = tx.hashForSignature(1, b39p2shScriptPubKey, SigHash.SINGLE, false);
+                    Hash hash = tx.hashForSignature(1, b39p2shScriptPubKey, SigHash.SINGLE, false);
 
                     // Sign input
                     try {
@@ -807,7 +807,7 @@ public class FullBlockTestGenerator {
 
                     if (scriptSig == null) {
                         // Exploit the SigHash.SINGLE bug to avoid having to make more than one signature
-                        Sha256Hash hash = tx.hashForSignature(1,
+                        Hash hash = tx.hashForSignature(1,
                                 b39p2shScriptPubKey, SigHash.SINGLE, false);
 
                         // Sign input
@@ -935,7 +935,7 @@ public class FullBlockTestGenerator {
         {
             b46.transactions = new ArrayList<Transaction>();
             b46.setDifficultyTarget(b44.getDifficultyTarget());
-            b46.setMerkleRoot(Sha256Hash.ZERO_HASH);
+            b46.setMerkleRoot(Hash.ZERO_HASH);
 
             b46.setPrevBlockHash(b44.getHash());
             b46.setTime(b44.getTimeSeconds() + 1);
@@ -970,7 +970,7 @@ public class FullBlockTestGenerator {
         
         // Block with invalid merkle hash
         Block b49 = createNextBlock(b44, chainHeadHeight + 16, out15, null);
-        b49.setMerkleRoot(Sha256Hash.ZERO_HASH);
+        b49.setMerkleRoot(Hash.ZERO_HASH);
         b49.solve();
         blocks.add(new BlockAndValidity(blockToHeightMap, b49, false, true, b44.getHash(), chainHeadHeight + 15, "b49"));
         
@@ -1306,7 +1306,7 @@ public class FullBlockTestGenerator {
             Transaction tx = new Transaction(params);
             tx.addOutput(new TransactionOutput(params, tx, BigInteger.ZERO, new byte[]{OP_TRUE}));
             tx.addInput(new TransactionInput(params, tx, new byte[]{OP_TRUE},
-                    new TransactionOutPoint(params, 0, new Sha256Hash("23c70ed7c0506e9178fc1a987f40a33946d4ad4c962b5ae3a52546da53af0c5c"))));
+                    new TransactionOutPoint(params, 0, new Hash("23c70ed7c0506e9178fc1a987f40a33946d4ad4c962b5ae3a52546da53af0c5c"))));
             b70.addTransaction(tx);
         }
         b70.solve();
@@ -1534,7 +1534,7 @@ public class FullBlockTestGenerator {
             TransactionOutPoint lastOutput = new TransactionOutPoint(params, 2, b1001.getTransactions().get(1).getHash());
             int blockCountAfter1001;
             
-            List<Sha256Hash> hashesToSpend = new LinkedList<Sha256Hash>(); // all index 0
+            List<Hash> hashesToSpend = new LinkedList<Hash>(); // all index 0
             final int TRANSACTION_CREATION_BLOCKS = 100;
             for (blockCountAfter1001 = 0; blockCountAfter1001 < TRANSACTION_CREATION_BLOCKS; blockCountAfter1001++) {
                 Block block = createNextBlock(lastBlock, nextHeight++, null, null);
@@ -1553,7 +1553,7 @@ public class FullBlockTestGenerator {
                 lastBlock = block;
             }
 
-            Iterator<Sha256Hash> hashes = hashesToSpend.iterator();
+            Iterator<Hash> hashes = hashesToSpend.iterator();
             for (int i = 0; hashes.hasNext(); i++) {
                 Block block = createNextBlock(lastBlock, nextHeight++, null, null);
                 while (block.getMessageSize() < Block.MAX_BLOCK_SIZE - 500 && hashes.hasNext()) {
@@ -1570,7 +1570,7 @@ public class FullBlockTestGenerator {
             }
             
             // Reorg back to b1001 + empty blocks
-            Sha256Hash firstHash = lastBlock.getHash();
+            Hash firstHash = lastBlock.getHash();
             int height = nextHeight-1;
             nextHeight = chainHeadHeight + 26;
             lastBlock = b1001;
@@ -1653,7 +1653,7 @@ public class FullBlockTestGenerator {
         t.addInput(input);
 
         byte[] connectedPubKeyScript = prevOut.scriptPubKey.getProgram();
-        Sha256Hash hash = t.hashForSignature(0, connectedPubKeyScript, SigHash.ALL, false);
+        Hash hash = t.hashForSignature(0, connectedPubKeyScript, SigHash.ALL, false);
 
         // Sign input
         try {

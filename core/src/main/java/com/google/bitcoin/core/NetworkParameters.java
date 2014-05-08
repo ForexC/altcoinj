@@ -89,7 +89,7 @@ public abstract class NetworkParameters implements Serializable {
     
     protected int[] acceptableAddressCodes;
     protected String[] dnsSeeds;
-    protected Map<Integer, Sha256Hash> checkpoints = new HashMap<Integer, Sha256Hash>();
+    protected Map<Integer, Hash> checkpoints = new HashMap<Integer, Hash>();
 
     protected NetworkParameters() {
         alertSigningKey = SATOSHI_KEY;
@@ -225,8 +225,8 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * Returns true if the block height is either not a checkpoint, or is a checkpoint and the hash matches.
      */
-    public boolean passesCheckpoint(int height, Sha256Hash hash) {
-        Sha256Hash checkpointHash = checkpoints.get(height);
+    public boolean passesCheckpoint(int height, Hash hash) {
+        Hash checkpointHash = checkpoints.get(height);
         return checkpointHash == null || checkpointHash.equals(hash);
     }
 
@@ -234,7 +234,7 @@ public abstract class NetworkParameters implements Serializable {
      * Returns true if the given height has a recorded checkpoint.
      */
     public boolean isCheckpoint(int height) {
-        Sha256Hash checkpointHash = checkpoints.get(height);
+        Hash checkpointHash = checkpoints.get(height);
         return checkpointHash != null;
     }
 

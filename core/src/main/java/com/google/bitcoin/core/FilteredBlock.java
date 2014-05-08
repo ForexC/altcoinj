@@ -31,11 +31,11 @@ public class FilteredBlock extends Message {
 
     // The PartialMerkleTree of transactions
     private PartialMerkleTree merkleTree;
-    private List<Sha256Hash> cachedTransactionHashes = null;
+    private List<Hash> cachedTransactionHashes = null;
     
     // A set of transactions whose hashes are a subset of getTransactionHashes()
     // These were relayed as a part of the filteredblock getdata, ie likely weren't previously received as loose transactions
-    private Map<Sha256Hash, Transaction> associatedTransactions = new HashMap<Sha256Hash, Transaction>();
+    private Map<Hash, Transaction> associatedTransactions = new HashMap<Hash, Transaction>();
     
     public FilteredBlock(NetworkParameters params, byte[] payloadBytes) throws ProtocolException {
         super(params, payloadBytes, 0);
@@ -70,10 +70,10 @@ public class FilteredBlock extends Message {
      * 
      * @throws ProtocolException If the partial merkle block is invalid or the merkle root of the partial merkle block doesnt match the block header
      */
-    public List<Sha256Hash> getTransactionHashes() throws VerificationException {
+    public List<Hash> getTransactionHashes() throws VerificationException {
         if (cachedTransactionHashes != null)
             return Collections.unmodifiableList(cachedTransactionHashes);
-        List<Sha256Hash> hashesMatched = new LinkedList<Sha256Hash>();
+        List<Hash> hashesMatched = new LinkedList<Hash>();
         if (header.getMerkleRoot().equals(merkleTree.getTxnHashAndMerkleRoot(hashesMatched))) {
             cachedTransactionHashes = hashesMatched;
             return Collections.unmodifiableList(cachedTransactionHashes);
@@ -89,7 +89,7 @@ public class FilteredBlock extends Message {
     }
     
     /** Gets the hash of the block represented in this Filtered Block */
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         return header.getHash();
     }
     
@@ -98,7 +98,7 @@ public class FilteredBlock extends Message {
      * @returns false if the tx is not relevant to this FilteredBlock
      */
     public boolean provideTransaction(Transaction tx) throws VerificationException {
-        Sha256Hash hash = tx.getHash();
+        Hash hash = tx.getHash();
         if (getTransactionHashes().contains(hash)) {
             associatedTransactions.put(hash, tx);
             return true;
@@ -107,7 +107,7 @@ public class FilteredBlock extends Message {
     }
     
     /** Gets the set of transactions which were provided using provideTransaction() which match in getTransactionHashes() */
-    public Map<Sha256Hash, Transaction> getAssociatedTransactions() {
+    public Map<Hash, Transaction> getAssociatedTransactions() {
         return Collections.unmodifiableMap(associatedTransactions);
     }
 

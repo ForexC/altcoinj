@@ -48,11 +48,11 @@ public class GetDataMessage extends ListMessage {
         super(params);
     }
 
-    public void addTransaction(Sha256Hash hash) {
+    public void addTransaction(Hash hash) {
         addItem(new InventoryItem(InventoryItem.Type.Transaction, hash));
     }
 
-    public void addBlock(Sha256Hash hash) {
+    public void addBlock(Hash hash) {
         addItem(new InventoryItem(InventoryItem.Type.Block, hash));
     }
 }

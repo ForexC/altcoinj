@@ -66,7 +66,7 @@ public class RejectMessage extends Message {
         }
     }
     private RejectCode code;
-    private Sha256Hash messageHash;
+    private Hash messageHash;
 
     public RejectMessage(NetworkParameters params, byte[] bytes) throws ProtocolException {
         super(params, bytes, 0);
@@ -118,7 +118,7 @@ public class RejectMessage extends Message {
     /**
      * Provides the hash of the rejected object (if getRejectedMessage() is either "tx" or "block"), otherwise null.
      */
-    public Sha256Hash getRejectedObjectHash() {
+    public Hash getRejectedObjectHash() {
         ensureParsed();
         return messageHash;
     }
@@ -140,7 +140,7 @@ public class RejectMessage extends Message {
 
     @Override
     public String toString() {
-        Sha256Hash hash = getRejectedObjectHash();
+        Hash hash = getRejectedObjectHash();
         if (hash != null)
             return String.format("Reject: %s %s for reason '%s' (%d)", getRejectedMessage(), getRejectedObjectHash(),
                 getReasonString(), getReasonCode().code);

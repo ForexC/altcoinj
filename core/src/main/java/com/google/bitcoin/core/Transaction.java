@@ -21,7 +21,6 @@ import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.script.ScriptOpCodes;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -108,7 +107,7 @@ public class Transaction extends ChildMessage implements Serializable {
     private Date updatedAt;
 
     // This is an in memory helper only.
-    private transient Sha256Hash hash;
+    private transient Hash hash;
 
     // Data about how confirmed this tx is. Serialized, may be null. 
     private TransactionConfidence confidence;
@@ -120,7 +119,7 @@ public class Transaction extends ChildMessage implements Serializable {
     // regardless of where they actually appeared in the block.
     //
     // If this transaction is not stored in the wallet, appearsInHashes is null.
-    private Map<Sha256Hash, Integer> appearsInHashes;
+    private Map<Hash, Integer> appearsInHashes;
 
     // Transactions can be encoded in a way that will use more bytes than is optimal
     // (due to VarInts having multiple encodings)
@@ -155,7 +154,7 @@ public class Transaction extends ChildMessage implements Serializable {
         length = 8; // 8 for std fields
     }
 
-    public Transaction(NetworkParameters params, int version, Sha256Hash hash) {
+    public Transaction(NetworkParameters params, int version, Hash hash) {
         super(params);
         this.version = version & ((1L<<32) - 1); // this field is unsigned - remove any sign extension
         inputs = new ArrayList<TransactionInput>();
@@ -209,10 +208,10 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Returns the transaction hash as you see them in the block explorer.
      */
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         if (hash == null) {
             byte[] bits = bitcoinSerialize();
-            hash = new Sha256Hash(reverseBytes(doubleDigest(bits)));
+            hash = new Hash(reverseBytes(doubleDigest(bits)));
         }
         return hash;
     }
@@ -223,7 +222,7 @@ public class Transaction extends ChildMessage implements Serializable {
      *
      * No verification is performed on this hash.
      */
-    void setHash(Sha256Hash hash) {
+    void setHash(Hash hash) {
         this.hash = hash;
     }
 
@@ -283,7 +282,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * block.
      */
     @Nullable
-    public Map<Sha256Hash, Integer> getAppearsInHashes() {
+    public Map<Hash, Integer> getAppearsInHashes() {
         return appearsInHashes != null ? ImmutableMap.copyOf(appearsInHashes) : null;
     }
 
@@ -330,10 +329,10 @@ public class Transaction extends ChildMessage implements Serializable {
         }
     }
 
-    public void addBlockAppearance(final Sha256Hash blockHash, int relativityOffset) {
+    public void addBlockAppearance(final Hash blockHash, int relativityOffset) {
         if (appearsInHashes == null) {
             // TODO: This could be a lot more memory efficient as we'll typically only store one element.
-            appearsInHashes = new TreeMap<Sha256Hash, Integer>();
+            appearsInHashes = new TreeMap<Hash, Integer>();
         }
         appearsInHashes.put(blockHash, relativityOffset);
     }
@@ -720,7 +719,7 @@ public class Transaction extends ChildMessage implements Serializable {
                                            SigHash sigHash, boolean anyoneCanPay) throws ScriptException {
         TransactionInput input = new TransactionInput(params, this, new byte[]{}, prevOut);
         addInput(input);
-        Sha256Hash hash = hashForSignature(inputs.size() - 1, scriptPubKey, sigHash, anyoneCanPay);
+        Hash hash = hashForSignature(inputs.size() - 1, scriptPubKey, sigHash, anyoneCanPay);
         ECKey.ECDSASignature ecSig = sigKey.sign(hash);
         TransactionSignature txSig = new TransactionSignature(ecSig, sigHash, anyoneCanPay);
         if (scriptPubKey.isSentToRawPubKey())
@@ -894,7 +893,7 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Calculates a signature that is valid for being inserted into the input at the given position. This is simply
      * a wrapper around calling {@link Transaction#hashForSignature(int, byte[], com.google.bitcoin.core.Transaction.SigHash, boolean)}
-     * followed by {@link ECKey#sign(Sha256Hash, org.spongycastle.crypto.params.KeyParameter)} and then returning
+     * followed by {@link ECKey#sign(Hash, org.spongycastle.crypto.params.KeyParameter)} and then returning
      * a new {@link TransactionSignature}.
      *
      * @param inputIndex Which input to calculate the signature for, as an index.
@@ -908,14 +907,14 @@ public class Transaction extends ChildMessage implements Serializable {
     public synchronized  TransactionSignature calculateSignature(int inputIndex, ECKey key, @Nullable KeyParameter aesKey,
                                                                  byte[] connectedPubKeyScript,
                                                                  SigHash hashType, boolean anyoneCanPay) {
-        Sha256Hash hash = hashForSignature(inputIndex, connectedPubKeyScript, hashType, anyoneCanPay);
+        Hash hash = hashForSignature(inputIndex, connectedPubKeyScript, hashType, anyoneCanPay);
         return new TransactionSignature(key.sign(hash, aesKey), hashType, anyoneCanPay);
     }
 
     /**
      * Calculates a signature that is valid for being inserted into the input at the given position. This is simply
      * a wrapper around calling {@link Transaction#hashForSignature(int, byte[], com.google.bitcoin.core.Transaction.SigHash, boolean)}
-     * followed by {@link ECKey#sign(Sha256Hash)} and then returning a new {@link TransactionSignature}.
+     * followed by {@link ECKey#sign(Hash)} and then returning a new {@link TransactionSignature}.
      *
      * @param inputIndex Which input to calculate the signature for, as an index.
      * @param key The private key used to calculate the signature.
@@ -926,7 +925,7 @@ public class Transaction extends ChildMessage implements Serializable {
      */
     public synchronized  TransactionSignature calculateSignature(int inputIndex, ECKey key, Script connectedPubKeyScript,
                                                                  SigHash hashType, boolean anyoneCanPay) {
-        Sha256Hash hash = hashForSignature(inputIndex, connectedPubKeyScript.getProgram(), hashType, anyoneCanPay);
+        Hash hash = hashForSignature(inputIndex, connectedPubKeyScript.getProgram(), hashType, anyoneCanPay);
         return new TransactionSignature(key.sign(hash), hashType, anyoneCanPay);
     }
 
@@ -942,7 +941,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * @param type Should be SigHash.ALL
      * @param anyoneCanPay should be false.
      */
-    public synchronized Sha256Hash hashForSignature(int inputIndex, byte[] connectedScript,
+    public synchronized Hash hashForSignature(int inputIndex, byte[] connectedScript,
                                                     SigHash type, boolean anyoneCanPay) {
         byte sigHashType = (byte) TransactionSignature.calcSigHashValue(type, anyoneCanPay);
         return hashForSignature(inputIndex, connectedScript, sigHashType);
@@ -960,7 +959,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * @param type Should be SigHash.ALL
      * @param anyoneCanPay should be false.
      */
-    public synchronized Sha256Hash hashForSignature(int inputIndex, Script connectedScript,
+    public synchronized Hash hashForSignature(int inputIndex, Script connectedScript,
                                                     SigHash type, boolean anyoneCanPay) {
         int sigHash = TransactionSignature.calcSigHashValue(type, anyoneCanPay);
         return hashForSignature(inputIndex, connectedScript.getProgram(), (byte) sigHash);
@@ -970,7 +969,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * This is required for signatures which use a sigHashType which cannot be represented using SigHash and anyoneCanPay
      * See transaction c99c49da4c38af669dea436d3e73780dfdb6c1ecf9958baa52960e8baee30e73, which has sigHashType 0
      */
-    public synchronized Sha256Hash hashForSignature(int inputIndex, byte[] connectedScript, byte sigHashType) {
+    public synchronized Hash hashForSignature(int inputIndex, byte[] connectedScript, byte sigHashType) {
         // The SIGHASH flags are used in the design of contracts, please see this page for a further understanding of
         // the purposes of the code in this method:
         //
@@ -1031,7 +1030,7 @@ public class Transaction extends ChildMessage implements Serializable {
                     this.outputs = outputs;
                     // Satoshis bug is that SignatureHash was supposed to return a hash and on this codepath it
                     // actually returns the constant "1" to indicate an error, which is never checked for. Oops.
-                    return new Sha256Hash("0100000000000000000000000000000000000000000000000000000000000000");
+                    return new Hash("0100000000000000000000000000000000000000000000000000000000000000");
                 }
                 // In SIGHASH_SINGLE the outputs after the matching input index are deleted, and the outputs before
                 // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
@@ -1058,7 +1057,7 @@ public class Transaction extends ChildMessage implements Serializable {
             uint32ToByteStreamLE(0x000000ff & sigHashType, bos);
             // Note that this is NOT reversed to ensure it will be signed correctly. If it were to be printed out
             // however then we would expect that it is IS reversed.
-            Sha256Hash hash = new Sha256Hash(doubleDigest(bos.toByteArray()));
+            Hash hash = new Hash(doubleDigest(bos.toByteArray()));
             bos.close();
 
             // Put the transaction back to how we found it.

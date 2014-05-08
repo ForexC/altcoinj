@@ -20,9 +20,7 @@ package com.google.bitcoin.core;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * <p>A data structure that contains proofs of block inclusion for one or more transactions, in an efficient manner.</p>
@@ -58,7 +56,7 @@ public class PartialMerkleTree extends Message {
     byte[] matchedChildBits;
 
     // txids and internal hashes
-    List<Sha256Hash> hashes;
+    List<Hash> hashes;
     
     public PartialMerkleTree(NetworkParameters params, byte[] payloadBytes, int offset) throws ProtocolException {
         super(params, payloadBytes, offset);
@@ -68,7 +66,7 @@ public class PartialMerkleTree extends Message {
         Utils.uint32ToByteStreamLE(transactionCount, stream);
 
         stream.write(new VarInt(hashes.size()).encode());
-        for (Sha256Hash hash : hashes)
+        for (Hash hash : hashes)
             stream.write(Utils.reverseBytes(hash.getBytes()));
 
         stream.write(new VarInt(matchedChildBits.length).encode());
@@ -80,7 +78,7 @@ public class PartialMerkleTree extends Message {
         transactionCount = (int)readUint32();
 
         int nHashes = (int) readVarInt();
-        hashes = new ArrayList<Sha256Hash>(nHashes);
+        hashes = new ArrayList<Hash>(nHashes);
         for (int i = 0; i < nHashes; i++)
             hashes.add(readHash());
 
@@ -106,7 +104,7 @@ public class PartialMerkleTree extends Message {
     
     // recursive function that traverses tree nodes, consuming the bits and hashes produced by TraverseAndBuild.
     // it returns the hash of the respective node.
-    private Sha256Hash recursiveExtractHashes(int height, int pos, ValuesUsed used, List<Sha256Hash> matchedHashes) throws VerificationException {
+    private Hash recursiveExtractHashes(int height, int pos, ValuesUsed used, List<Hash> matchedHashes) throws VerificationException {
         if (used.bitsUsed >= matchedChildBits.length*8) {
             // overflowed the bits array - failure
             throw new VerificationException("CPartialMerkleTree overflowed its bits array");
@@ -129,7 +127,7 @@ public class PartialMerkleTree extends Message {
             else
                 right = left;
             // and combine them before returning
-            return new Sha256Hash(Utils.reverseBytes(Utils.doubleDigestTwoBuffers(
+            return new Hash(Utils.reverseBytes(Utils.doubleDigestTwoBuffers(
                     Utils.reverseBytes(left), 0, 32,
                     Utils.reverseBytes(right), 0, 32)));
         }
@@ -147,7 +145,7 @@ public class PartialMerkleTree extends Message {
      * @return the merkle root of this merkle tree
      * @throws ProtocolException if this partial merkle tree is invalid
      */
-    public Sha256Hash getTxnHashAndMerkleRoot(List<Sha256Hash> matchedHashes) throws VerificationException {
+    public Hash getTxnHashAndMerkleRoot(List<Hash> matchedHashes) throws VerificationException {
         matchedHashes.clear();
         
         // An empty set will not work
@@ -168,7 +166,7 @@ public class PartialMerkleTree extends Message {
             height++;
         // traverse the partial tree
         ValuesUsed used = new ValuesUsed();
-        Sha256Hash merkleRoot = recursiveExtractHashes(height, 0, used, matchedHashes);
+        Hash merkleRoot = recursiveExtractHashes(height, 0, used, matchedHashes);
         // verify that all bits were consumed (except for the padding caused by serializing it as a byte sequence)
         if ((used.bitsUsed+7)/8 != matchedChildBits.length ||
                 // verify that all hashes were consumed

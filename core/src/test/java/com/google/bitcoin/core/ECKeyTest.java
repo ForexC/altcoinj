@@ -86,7 +86,7 @@ public class ECKeyTest {
         List<ListenableFuture<ECKey.ECDSASignature>> sigFutures = Lists.newArrayList();
         final ECKey key = new ECKey();
         for (byte i = 0; i < ITERATIONS; i++) {
-            final Sha256Hash hash = Sha256Hash.create(new byte[]{i});
+            final Hash hash = Hash.create(new byte[]{i});
             sigFutures.add(executor.submit(new Callable<ECKey.ECDSASignature>() {
                 @Override
                 public ECKey.ECDSASignature call() throws Exception {
@@ -109,13 +109,13 @@ public class ECKeyTest {
         // a message with it.
         BigInteger privkey = new BigInteger(1, Hex.decode("180cb41c7c600be951b5d3d0a7334acc7506173875834f7a6c4c786a28fcbb19"));
         ECKey key = new ECKey(privkey);
-        byte[] output = key.sign(Sha256Hash.ZERO_HASH).encodeToDER();
-        assertTrue(key.verify(Sha256Hash.ZERO_HASH.getBytes(), output));
+        byte[] output = key.sign(Hash.ZERO_HASH).encodeToDER();
+        assertTrue(key.verify(Hash.ZERO_HASH.getBytes(), output));
 
         // Test interop with a signature from elsewhere.
         byte[] sig = Hex.decode(
                 "3046022100dffbc26774fc841bbe1c1362fd643609c6e42dcb274763476d87af2c0597e89e022100c59e3c13b96b316cae9fa0ab0260612c7a133a6fe2b3445b6bf80b3123bf274d");
-        assertTrue(key.verify(Sha256Hash.ZERO_HASH.getBytes(), sig));
+        assertTrue(key.verify(Hash.ZERO_HASH.getBytes(), sig));
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ECKeyTest {
         for (ECKey key : new ECKey[] {decodedKey, roundtripKey}) {
             byte[] message = reverseBytes(Hex.decode(
                     "11da3761e86431e4a54c176789e41f1651b324d240d599a7067bee23d328ec2a"));
-            byte[] output = key.sign(new Sha256Hash(message)).encodeToDER();
+            byte[] output = key.sign(new Hash(message)).encodeToDER();
             assertTrue(key.verify(message, output));
 
             output = Hex.decode(
@@ -144,8 +144,8 @@ public class ECKeyTest {
         // Try to sign with one key and verify with the other.
         byte[] message = reverseBytes(Hex.decode(
             "11da3761e86431e4a54c176789e41f1651b324d240d599a7067bee23d328ec2a"));
-        assertTrue(roundtripKey.verify(message, decodedKey.sign(new Sha256Hash(message)).encodeToDER()));
-        assertTrue(decodedKey.verify(message, roundtripKey.sign(new Sha256Hash(message)).encodeToDER()));
+        assertTrue(roundtripKey.verify(message, decodedKey.sign(new Hash(message)).encodeToDER()));
+        assertTrue(decodedKey.verify(message, roundtripKey.sign(new Hash(message)).encodeToDER()));
     }
 
     @Test
@@ -162,7 +162,7 @@ public class ECKeyTest {
         for (ECKey key : new ECKey[] {decodedKey, roundtripKey}) {
             byte[] message = reverseBytes(Hex.decode(
                     "11da3761e86431e4a54c176789e41f1651b324d240d599a7067bee23d328ec2a"));
-            byte[] output = key.sign(new Sha256Hash(message)).encodeToDER();
+            byte[] output = key.sign(new Hash(message)).encodeToDER();
             assertTrue(key.verify(message, output));
 
             output = Hex.decode(
@@ -173,8 +173,8 @@ public class ECKeyTest {
         // Try to sign with one key and verify with the other.
         byte[] message = reverseBytes(Hex.decode(
             "11da3761e86431e4a54c176789e41f1651b324d240d599a7067bee23d328ec2a"));
-        assertTrue(roundtripKey.verify(message, decodedKey.sign(new Sha256Hash(message)).encodeToDER()));
-        assertTrue(decodedKey.verify(message, roundtripKey.sign(new Sha256Hash(message)).encodeToDER()));
+        assertTrue(roundtripKey.verify(message, decodedKey.sign(new Hash(message)).encodeToDER()));
+        assertTrue(decodedKey.verify(message, roundtripKey.sign(new Hash(message)).encodeToDER()));
 
         // Verify bytewise equivalence of public keys (i.e. compression state is preserved)
         ECKey key = new ECKey();
@@ -242,7 +242,7 @@ public class ECKeyTest {
     public void keyRecovery() throws Exception {
         ECKey key = new ECKey();
         String message = "Hello World!";
-        Sha256Hash hash = Sha256Hash.create(message.getBytes());
+        Hash hash = Hash.create(message.getBytes());
         ECKey.ECDSASignature sig = key.sign(hash);
         key = new ECKey(null, key.getPubKey());
         boolean found = false;
@@ -340,7 +340,7 @@ public class ECKeyTest {
         ECKey encryptedKey = unencryptedKey.encrypt(keyCrypter, aesKey);
 
         String message = "Goodbye Jupiter!";
-        Sha256Hash hash = Sha256Hash.create(message.getBytes());
+        Hash hash = Hash.create(message.getBytes());
         ECKey.ECDSASignature sig = encryptedKey.sign(hash, aesKey);
         unencryptedKey = new ECKey(null, unencryptedKey.getPubKey());
         boolean found = false;
@@ -446,7 +446,7 @@ public class ECKeyTest {
 
         byte[] hash = new byte[32];
         new Random().nextBytes(hash);
-        byte[] sigBytes = key.sign(new Sha256Hash(hash)).encodeToDER();
+        byte[] sigBytes = key.sign(new Hash(hash)).encodeToDER();
         byte[] encodedSig = Arrays.copyOf(sigBytes, sigBytes.length + 1);
         encodedSig[sigBytes.length] = (byte) (Transaction.SigHash.ALL.ordinal() + 1);
         if (!TransactionSignature.isEncodingCanonical(encodedSig)) {

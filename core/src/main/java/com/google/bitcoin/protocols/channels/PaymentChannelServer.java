@@ -92,7 +92,7 @@ public class PaymentChannelServer {
          *
          * @param contractHash A unique identifier which represents this channel (actually the hash of the multisig contract)
          */
-        public void channelOpen(Sha256Hash contractHash);
+        public void channelOpen(Hash contractHash);
 
         /**
          * <p>Called when the payment in this channel was successfully incremented by the client</p>
@@ -184,7 +184,7 @@ public class PaymentChannelServer {
                 .build());
         ByteString reopenChannelContractHash = msg.getClientVersion().getPreviousChannelContractHash();
         if (reopenChannelContractHash != null && reopenChannelContractHash.size() == 32) {
-            Sha256Hash contractHash = new Sha256Hash(reopenChannelContractHash.toByteArray());
+            Hash contractHash = new Hash(reopenChannelContractHash.toByteArray());
             log.info("New client that wants to resume {}", contractHash);
             StoredPaymentChannelServerStates channels = (StoredPaymentChannelServerStates)
                     wallet.getExtensions().get(StoredPaymentChannelServerStates.EXTENSION_ID);
@@ -255,7 +255,7 @@ public class PaymentChannelServer {
                 .build());
     }
 
-    private void multisigContractPropogated(Protos.ProvideContract providedContract, Sha256Hash contractHash) {
+    private void multisigContractPropogated(Protos.ProvideContract providedContract, Hash contractHash) {
         lock.lock();
         try {
             if (!connectionOpen || channelSettling)

@@ -124,7 +124,7 @@ public class ScriptTest {
         Script outputScript = ScriptBuilder.createOutputScript(address);
         spendTx.addOutput(output.getValue(), outputScript);
         spendTx.addInput(output);
-        Sha256Hash sighash = spendTx.hashForSignature(0, multisigScript, SigHash.ALL, false);
+        Hash sighash = spendTx.hashForSignature(0, multisigScript, SigHash.ALL, false);
         ECKey.ECDSASignature party1Signature = key1.sign(sighash);
         ECKey.ECDSASignature party2Signature = key2.sign(sighash);
         TransactionSignature party1TransactionSignature = new TransactionSignature(party1Signature, SigHash.ALL, false);
@@ -383,7 +383,7 @@ public class ScriptTest {
                         String hash = input.list.get(0).string;
                         int index = input.list.get(1).integer;
                         String script = input.list.get(2).string;
-                        Sha256Hash sha256Hash = new Sha256Hash(Hex.decode(hash.getBytes(Charset.forName("UTF-8"))));
+                        Hash sha256Hash = new Hash(Hex.decode(hash.getBytes(Charset.forName("UTF-8"))));
                         scriptPubKeys.put(new TransactionOutPoint(params, index, sha256Hash), parseScriptString(script));
                     }
 
@@ -440,7 +440,7 @@ public class ScriptTest {
                     String hash = input.list.get(0).string;
                     int index = input.list.get(1).integer;
                     String script = input.list.get(2).string;
-                    Sha256Hash sha256Hash = new Sha256Hash(Hex.decode(hash.getBytes(Charset.forName("UTF-8"))));
+                    Hash sha256Hash = new Hash(Hex.decode(hash.getBytes(Charset.forName("UTF-8"))));
                     scriptPubKeys.put(new TransactionOutPoint(params, index, sha256Hash), parseScriptString(script));
                 }
 

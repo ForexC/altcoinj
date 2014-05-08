@@ -25,9 +25,9 @@ import java.util.Map;
  * Keeps {@link com.google.bitcoin.core.StoredBlock}s in memory. Used primarily for unit testing.
  */
 public class MemoryBlockStore implements BlockStore {
-    private LinkedHashMap<Sha256Hash, StoredBlock> blockMap = new LinkedHashMap<Sha256Hash, StoredBlock>() {
+    private LinkedHashMap<Hash, StoredBlock> blockMap = new LinkedHashMap<Hash, StoredBlock>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Sha256Hash, StoredBlock> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<Hash, StoredBlock> eldest) {
             return blockMap.size() > 5000;
         }
     };
@@ -49,11 +49,11 @@ public class MemoryBlockStore implements BlockStore {
 
     public synchronized void put(StoredBlock block) throws BlockStoreException {
         if (blockMap == null) throw new BlockStoreException("MemoryBlockStore is closed");
-        Sha256Hash hash = block.getHeader().getHash();
+        Hash hash = block.getHeader().getHash();
         blockMap.put(hash, block);
     }
 
-    public synchronized StoredBlock get(Sha256Hash hash) throws BlockStoreException {
+    public synchronized StoredBlock get(Hash hash) throws BlockStoreException {
         if (blockMap == null) throw new BlockStoreException("MemoryBlockStore is closed");
         return blockMap.get(hash);
     }

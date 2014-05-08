@@ -35,7 +35,7 @@ public class StoredTransactionOutput implements Serializable {
     private byte[] scriptBytes;
 
     /** Hash of the transaction to which we refer. */
-    private Sha256Hash hash;
+    private Hash hash;
     /** Which output of that transaction we are talking about. */
     private long index;
 
@@ -53,7 +53,7 @@ public class StoredTransactionOutput implements Serializable {
      * @param height the height this output was created in
      * @param scriptBytes
      */
-    public StoredTransactionOutput(Sha256Hash hash, long index, BigInteger value, int height, boolean isCoinbase, byte[] scriptBytes) {
+    public StoredTransactionOutput(Hash hash, long index, BigInteger value, int height, boolean isCoinbase, byte[] scriptBytes) {
         this.hash = hash;
         this.index = index;
         this.value = value;
@@ -61,7 +61,7 @@ public class StoredTransactionOutput implements Serializable {
         this.scriptBytes = scriptBytes;
     }
 
-    public StoredTransactionOutput(Sha256Hash hash, TransactionOutput out, int height, boolean isCoinbase) {
+    public StoredTransactionOutput(Hash hash, TransactionOutput out, int height, boolean isCoinbase) {
         this.hash = hash;
         this.index = out.getIndex();
         this.value = out.getValue();
@@ -86,7 +86,7 @@ public class StoredTransactionOutput implements Serializable {
         byte[] hashBytes = new byte[32];
         if (in.read(hashBytes) != 32)
             throw new EOFException();
-        hash = new Sha256Hash(hashBytes);
+        hash = new Hash(hashBytes);
         
         byte[] indexBytes = new byte[4];
         if (in.read(indexBytes) != 4)
@@ -119,7 +119,7 @@ public class StoredTransactionOutput implements Serializable {
      * The hash of the transaction which holds this output
      * @return the hash
      */
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         return hash;
     }
 

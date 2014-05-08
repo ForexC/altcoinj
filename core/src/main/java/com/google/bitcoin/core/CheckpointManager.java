@@ -68,7 +68,7 @@ public class CheckpointManager {
     protected final TreeMap<Long, StoredBlock> checkpoints = new TreeMap<Long, StoredBlock>();
 
     protected final NetworkParameters params;
-    protected final Sha256Hash dataHash;
+    protected final Hash dataHash;
 
     public CheckpointManager(NetworkParameters params, InputStream inputStream) throws IOException {
         this.params = checkNotNull(params);
@@ -102,7 +102,7 @@ public class CheckpointManager {
                 buffer.position(0);
                 checkpoints.put(block.getHeader().getTimeSeconds(), block);
             }
-            dataHash = new Sha256Hash(digest.digest());
+            dataHash = new Hash(digest.digest());
             log.info("Read {} checkpoints, hash is {}", checkpoints.size(), dataHash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  // Cannot happen.
@@ -137,7 +137,7 @@ public class CheckpointManager {
     }
 
     /** Returns a hash of the concatenated checkpoint data. */
-    public Sha256Hash getDataHash() {
+    public Hash getDataHash() {
         return dataHash;
     }
 

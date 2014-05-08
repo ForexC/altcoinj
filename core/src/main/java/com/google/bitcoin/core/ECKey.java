@@ -426,7 +426,7 @@ public class ECKey implements Serializable {
      * further EC maths on them.
      * @throws KeyCrypterException if this ECKey doesn't have a private part.
      */
-    public ECDSASignature sign(Sha256Hash input) throws KeyCrypterException {
+    public ECDSASignature sign(Hash input) throws KeyCrypterException {
         return sign(input, null);
     }
 
@@ -447,7 +447,7 @@ public class ECKey implements Serializable {
      * @param aesKey The AES key to use for decryption of the private key. If null then no decryption is required.
      * @throws KeyCrypterException if this ECKey doesn't have a private part.
      */
-    public ECDSASignature sign(Sha256Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
+    public ECDSASignature sign(Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
         if (FAKE_SIGNATURES)
             return TransactionSignature.dummy();
 
@@ -541,7 +541,7 @@ public class ECKey implements Serializable {
     /**
      * Verifies the given R/S pair (signature) against a hash using the public key.
      */
-    public boolean verify(Sha256Hash sigHash, ECDSASignature signature) {
+    public boolean verify(Hash sigHash, ECDSASignature signature) {
         return ECKey.verify(sigHash.getBytes(), signature, getPubKey());
     }
 
@@ -628,7 +628,7 @@ public class ECKey implements Serializable {
         if (priv == null)
             throw new IllegalStateException("This ECKey does not have the private key necessary for signing.");
         byte[] data = Utils.formatMessageForSigning(message);
-        Sha256Hash hash = Sha256Hash.createDouble(data);
+        Hash hash = Hash.createDouble(data);
         ECDSASignature sig = sign(hash, aesKey);
         // Now we have to work backwards to figure out the recId needed to recover the signature.
         int recId = -1;
@@ -682,7 +682,7 @@ public class ECKey implements Serializable {
         byte[] messageBytes = Utils.formatMessageForSigning(message);
         // Note that the C++ code doesn't actually seem to specify any character encoding. Presumably it's whatever
         // JSON-SPIRIT hands back. Assume UTF-8 for now.
-        Sha256Hash messageHash = Sha256Hash.createDouble(messageBytes);
+        Hash messageHash = Hash.createDouble(messageBytes);
         boolean compressed = false;
         if (header >= 31) {
             compressed = true;
@@ -726,7 +726,7 @@ public class ECKey implements Serializable {
      * @return An ECKey containing only the public part, or null if recovery wasn't possible.
      */
     @Nullable
-    public static ECKey recoverFromSignature(int recId, ECDSASignature sig, Sha256Hash message, boolean compressed) {
+    public static ECKey recoverFromSignature(int recId, ECDSASignature sig, Hash message, boolean compressed) {
         Preconditions.checkArgument(recId >= 0, "recId must be positive");
         Preconditions.checkArgument(sig.r.signum() >= 0, "r must be positive");
         Preconditions.checkArgument(sig.s.signum() >= 0, "s must be positive");

@@ -31,9 +31,9 @@ public class InventoryItem {
     }
 
     public final Type type;
-    public final Sha256Hash hash;
+    public final Hash hash;
 
-    public InventoryItem(Type type, Sha256Hash hash) {
+    public InventoryItem(Type type, Hash hash) {
         this.type = type;
         this.hash = hash;
     }

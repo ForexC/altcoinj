@@ -46,7 +46,7 @@ import static com.google.bitcoin.core.Utils.doubleDigestTwoBuffers;
  * more detail on blocks. <p/>
  *
  * To get a block, you can either build one from the raw bytes you can get from another implementation, or request one
- * specifically using {@link Peer#getBlock(Sha256Hash)}, or grab one from a downloaded {@link BlockChain}.
+ * specifically using {@link Peer#getBlock(Hash)}, or grab one from a downloaded {@link BlockChain}.
  */
 public class Block extends Message {
     private static final Logger log = LoggerFactory.getLogger(Block.class);
@@ -75,8 +75,8 @@ public class Block extends Message {
 
     // Fields defined as part of the protocol format.
     private long version;
-    private Sha256Hash prevBlockHash;
-    private Sha256Hash merkleRoot;
+    private Hash prevBlockHash;
+    private Hash merkleRoot;
     private long time;
     private long difficultyTarget; // "nBits"
     private long nonce;
@@ -85,7 +85,7 @@ public class Block extends Message {
     List<Transaction> transactions;
 
     /** Stores the hash of the block. If null, getHash() will recalculate it. */
-    private transient Sha256Hash hash;
+    private transient Hash hash;
 
     private transient boolean headerParsed;
     private transient boolean transactionsParsed;
@@ -105,7 +105,7 @@ public class Block extends Message {
         version = 1;
         difficultyTarget = 0x1d07fff8L;
         time = System.currentTimeMillis() / 1000;
-        prevBlockHash = Sha256Hash.ZERO_HASH;
+        prevBlockHash = Hash.ZERO_HASH;
 
         length = 80;
     }
@@ -136,14 +136,14 @@ public class Block extends Message {
      * Construct a block initialized with all the given fields.
      * @param params Which network the block is for.
      * @param version This should usually be set to 1 or 2, depending on if the height is in the coinbase input.
-     * @param prevBlockHash Reference to previous block in the chain or {@link Sha256Hash#ZERO_HASH} if genesis.
+     * @param prevBlockHash Reference to previous block in the chain or {@link Hash#ZERO_HASH} if genesis.
      * @param merkleRoot The root of the merkle tree formed by the transactions.
      * @param time UNIX time when the block was mined.
      * @param difficultyTarget Number which this block hashes lower than.
      * @param nonce Arbitrary number to make the block hash lower than the target.
      * @param transactions List of transactions including the coinbase.
      */
-    public Block(NetworkParameters params, long version, Sha256Hash prevBlockHash, Sha256Hash merkleRoot, long time,
+    public Block(NetworkParameters params, long version, Hash prevBlockHash, Hash merkleRoot, long time,
                  long difficultyTarget, long nonce, List<Transaction> transactions) {
         super(params);
         this.version = version;
@@ -189,7 +189,7 @@ public class Block extends Message {
         difficultyTarget = readUint32();
         nonce = readUint32();
 
-        hash = new Sha256Hash(Utils.reverseBytes(Utils.doubleDigest(bytes, offset, cursor)));
+        hash = new Hash(Utils.reverseBytes(Utils.doubleDigest(bytes, offset, cursor)));
 
         headerParsed = true;
         headerBytesValid = parseRetain;
@@ -499,11 +499,11 @@ public class Block extends Message {
      * Calculates the block hash by serializing the block and hashing the
      * resulting bytes.
      */
-    private Sha256Hash calculateHash() {
+    private Hash calculateHash() {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
-            return new Sha256Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
+            return new Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
@@ -522,7 +522,7 @@ public class Block extends Message {
      * Returns the hash of the block (which for a valid, solved block should be
      * below the target). Big endian.
      */
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         if (hash == null)
             hash = calculateHash();
         return hash;
@@ -676,16 +676,16 @@ public class Block extends Message {
     }
 
     private void checkMerkleRoot() throws VerificationException {
-        Sha256Hash calculatedRoot = calculateMerkleRoot();
+        Hash calculatedRoot = calculateMerkleRoot();
         if (!calculatedRoot.equals(merkleRoot)) {
             log.error("Merkle tree did not verify");
             throw new VerificationException("Merkle hashes do not match: " + calculatedRoot + " vs " + merkleRoot);
         }
     }
 
-    private Sha256Hash calculateMerkleRoot() {
+    private Hash calculateMerkleRoot() {
         List<byte[]> tree = buildMerkleTree();
-        return new Sha256Hash(tree.get(tree.size() - 1));
+        return new Hash(tree.get(tree.size() - 1));
     }
 
     private List<byte[]> buildMerkleTree() {
@@ -819,7 +819,7 @@ public class Block extends Message {
     /**
      * Returns the merkle root in big endian form, calculating it from transactions if necessary.
      */
-    public Sha256Hash getMerkleRoot() {
+    public Hash getMerkleRoot() {
         maybeParseHeader();
         if (merkleRoot == null) {
 
@@ -832,7 +832,7 @@ public class Block extends Message {
     }
 
     /** Exists only for unit testing. */
-    void setMerkleRoot(Sha256Hash value) {
+    void setMerkleRoot(Hash value) {
         unCacheHeader();
         merkleRoot = value;
         hash = null;
@@ -870,12 +870,12 @@ public class Block extends Message {
     /**
      * Returns the hash of the previous block in the chain, as defined by the block header.
      */
-    public Sha256Hash getPrevBlockHash() {
+    public Hash getPrevBlockHash() {
         maybeParseHeader();
         return prevBlockHash;
     }
 
-    void setPrevBlockHash(Sha256Hash prevBlockHash) {
+    void setPrevBlockHash(Hash prevBlockHash) {
         unCacheHeader();
         this.prevBlockHash = prevBlockHash;
         this.hash = null;
@@ -1004,7 +1004,7 @@ public class Block extends Message {
                 byte[] counter = new byte[32];
                 counter[0] = (byte) txCounter;
                 counter[1] = (byte) (txCounter++ >> 8);
-                input.getOutpoint().setHash(new Sha256Hash(counter));
+                input.getOutpoint().setHash(new Hash(counter));
             } else {
                 input = new TransactionInput(params, t, Script.createInputScript(EMPTY_BYTES, EMPTY_BYTES), prevOut);
             }

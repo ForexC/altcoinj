@@ -63,9 +63,9 @@ public class SPVBlockStore implements BlockStore {
     // the OpenJDK/Oracle JVM calls into the get() methods are compiled down to inlined native code on Android each
     // get() call is actually a full-blown JNI method under the hood, meaning it's unbelievably slow. The caches
     // below let us stay in the JIT-compiled Java world without expensive JNI transitions and make a 10x difference!
-    protected LinkedHashMap<Sha256Hash, StoredBlock> blockCache = new LinkedHashMap<Sha256Hash, StoredBlock>() {
+    protected LinkedHashMap<Hash, StoredBlock> blockCache = new LinkedHashMap<Hash, StoredBlock>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Sha256Hash, StoredBlock> entry) {
+        protected boolean removeEldestEntry(Map.Entry<Hash, StoredBlock> entry) {
             return size() > 2050;  // Slightly more than the difficulty transition period.
         }
     };
@@ -76,9 +76,9 @@ public class SPVBlockStore implements BlockStore {
     // We don't care about the value in this cache. It is always notFoundMarker. Unfortunately LinkedHashSet does not
     // provide the removeEldestEntry control.
     protected static final Object notFoundMarker = new Object();
-    protected LinkedHashMap<Sha256Hash, Object> notFoundCache = new LinkedHashMap<Sha256Hash, Object>() {
+    protected LinkedHashMap<Hash, Object> notFoundCache = new LinkedHashMap<Hash, Object>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Sha256Hash, Object> entry) {
+        protected boolean removeEldestEntry(Map.Entry<Hash, Object> entry) {
             return size() > 100;  // This was chosen arbitrarily.
         }
     };
@@ -173,7 +173,7 @@ public class SPVBlockStore implements BlockStore {
                 cursor = FILE_PROLOGUE_BYTES;
             }
             buffer.position(cursor);
-            Sha256Hash hash = block.getHeader().getHash();
+            Hash hash = block.getHeader().getHash();
             notFoundCache.remove(hash);
             buffer.put(hash.getBytes());
             block.serializeCompact(buffer);
@@ -183,7 +183,7 @@ public class SPVBlockStore implements BlockStore {
     }
 
     @Nullable
-    public StoredBlock get(Sha256Hash hash) throws BlockStoreException {
+    public StoredBlock get(Hash hash) throws BlockStoreException {
         final MappedByteBuffer buffer = this.buffer;
         if (buffer == null) throw new BlockStoreException("Store closed");
 
@@ -238,7 +238,7 @@ public class SPVBlockStore implements BlockStore {
                 byte[] headHash = new byte[32];
                 buffer.position(8);
                 buffer.get(headHash);
-                Sha256Hash hash = new Sha256Hash(headHash);
+                Hash hash = new Hash(headHash);
                 StoredBlock block = get(hash);
                 if (block == null)
                     throw new BlockStoreException("Corrupted block store: could not find chain head: " + hash);

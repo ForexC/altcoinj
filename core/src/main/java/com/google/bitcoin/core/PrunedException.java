@@ -26,12 +26,12 @@ package com.google.bitcoin.core;
  */
 @SuppressWarnings("serial")
 public class PrunedException extends Exception {
-    private Sha256Hash hash;
-    public PrunedException(Sha256Hash hash) {
+    private Hash hash;
+    public PrunedException(Hash hash) {
         super(hash.toString());
         this.hash = hash;
     }
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         return hash;
     }
 }

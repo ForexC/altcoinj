@@ -124,13 +124,13 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
     //           to the user in the UI, etc). A transaction can leave dead and move into spent/unspent if there is a
     //           re-org to a chain that doesn't include the double spend.
 
-    final Map<Sha256Hash, Transaction> pending;
-    final Map<Sha256Hash, Transaction> unspent;
-    final Map<Sha256Hash, Transaction> spent;
-    final Map<Sha256Hash, Transaction> dead;
+    final Map<Hash, Transaction> pending;
+    final Map<Hash, Transaction> unspent;
+    final Map<Hash, Transaction> spent;
+    final Map<Hash, Transaction> dead;
 
     // All transactions together.
-    final Map<Sha256Hash, Transaction> transactions;
+    final Map<Hash, Transaction> transactions;
 
     // A list of public/private EC keys owned by this user. Access it using addKey[s], hasKey[s] and findPubKeyFromHash.
     private ArrayList<ECKey> keychain;
@@ -140,7 +140,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
 
     private final NetworkParameters params;
 
-    @Nullable private Sha256Hash lastBlockSeenHash;
+    @Nullable private Hash lastBlockSeenHash;
     private int lastBlockSeenHeight;
     private long lastBlockSeenTimeSecs;
 
@@ -153,7 +153,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
     // If a TX hash appears in this set then notifyNewBestBlock will ignore it, as its confidence was already set up
     // in receive() via Transaction.setBlockAppearance(). As the BlockChain always calls notifyNewBestBlock even if
     // it sent transactions to the wallet, without this we'd double count.
-    private transient HashSet<Sha256Hash> ignoreNextNewBlock;
+    private transient HashSet<Hash> ignoreNextNewBlock;
     // Whether or not to ignore nLockTime > 0 transactions that are received to the mempool.
     private boolean acceptRiskyTransactions;
 
@@ -196,11 +196,11 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         this.params = checkNotNull(params);
         keychain = new ArrayList<ECKey>();
         watchedScripts = Sets.newHashSet();
-        unspent = new HashMap<Sha256Hash, Transaction>();
-        spent = new HashMap<Sha256Hash, Transaction>();
-        pending = new HashMap<Sha256Hash, Transaction>();
-        dead = new HashMap<Sha256Hash, Transaction>();
-        transactions = new HashMap<Sha256Hash, Transaction>();
+        unspent = new HashMap<Hash, Transaction>();
+        spent = new HashMap<Hash, Transaction>();
+        pending = new HashMap<Hash, Transaction>();
+        dead = new HashMap<Hash, Transaction>();
+        transactions = new HashMap<Hash, Transaction>();
         eventListeners = new CopyOnWriteArrayList<ListenerRegistration<WalletEventListener>>();
         extensions = new HashMap<String, WalletExtension>();
         // Use a linked hash map to ensure ordering of event listeners is correct.
@@ -217,7 +217,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
     }
 
     private void createTransientState() {
-        ignoreNextNewBlock = new HashSet<Sha256Hash>();
+        ignoreNextNewBlock = new HashSet<Hash>();
         txConfidenceListener = new TransactionConfidence.Listener() {
             @Override
             public void onConfidenceChanged(Transaction tx, TransactionConfidence.Listener.ChangeReason reason) {
@@ -522,7 +522,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
             boolean success = true;
             Set<Transaction> transactions = getTransactions(true);
 
-            Set<Sha256Hash> hashes = new HashSet<Sha256Hash>();
+            Set<Hash> hashes = new HashSet<Hash>();
             for (Transaction tx : transactions) {
                 hashes.add(tx.getHash());
             }
@@ -601,7 +601,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
      * inactive side chain. We must still record these transactions and the blocks they appear in because a future
      * block might change which chain is best causing a reorganize. A re-org can totally change our balance!
      */
-    public void notifyTransactionIsInBlock(Sha256Hash txHash, StoredBlock block,
+    public void notifyTransactionIsInBlock(Hash txHash, StoredBlock block,
                                            BlockChain.NewBlockType blockType,
                                            int relativityOffset) throws VerificationException {
         lock.lock();
@@ -841,7 +841,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         // Runs in a peer thread.
         checkState(lock.isHeldByCurrentThread());
         BigInteger prevBalance = getBalance();
-        Sha256Hash txHash = tx.getHash();
+        Hash txHash = tx.getHash();
         boolean bestChain = blockType == BlockChain.NewBlockType.BEST_CHAIN;
         boolean sideChain = blockType == BlockChain.NewBlockType.SIDE_CHAIN;
 
@@ -889,7 +889,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
             } else {
                 // Ignore the case where a tx appears on a side chain at the same time as the best chain (this is
                 // quite normal and expected).
-                Sha256Hash hash = tx.getHash();
+                Hash hash = tx.getHash();
                 if (!unspent.containsKey(hash) && !spent.containsKey(hash)) {
                     // Otherwise put it (possibly back) into pending.
                     // Committing it updates the spent flags and inserts into the pool as well.
@@ -970,7 +970,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
      */
     public void notifyNewBestBlock(StoredBlock block) throws VerificationException {
         // Check to see if this block has been seen before.
-        Sha256Hash newBlockHash = block.getHeader().getHash();
+        Hash newBlockHash = block.getHeader().getHash();
         if (newBlockHash.equals(getLastBlockSeenHash()))
             return;
         lock.lock();
@@ -1432,7 +1432,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
      * Returns a transaction object given its hash, if it exists in this wallet, or null otherwise.
      */
     @Nullable
-    public Transaction getTransaction(Sha256Hash hash) {
+    public Transaction getTransaction(Hash hash) {
         lock.lock();
         try {
             return transactions.get(hash);
@@ -1502,7 +1502,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         lock.lock();
         try {
             EnumSet<Pool> result = EnumSet.noneOf(Pool.class);
-            Sha256Hash txHash = tx.getHash();
+            Hash txHash = tx.getHash();
             if (unspent.containsKey(txHash)) {
                 result.add(Pool.UNSPENT);
             }
@@ -2434,7 +2434,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         }
     }
 
-    private void toStringHelper(StringBuilder builder, Map<Sha256Hash, Transaction> transactionMap,
+    private void toStringHelper(StringBuilder builder, Map<Hash, Transaction> transactionMap,
                                 @Nullable AbstractBlockChain chain, @Nullable Comparator<Transaction> sortOrder) {
         checkState(lock.isHeldByCurrentThread());
 
@@ -2510,17 +2510,17 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
 
             // Map block hash to transactions that appear in it. We ensure that the map values are sorted according
             // to their relative position within those blocks.
-            ArrayListMultimap<Sha256Hash, TxOffsetPair> mapBlockTx = ArrayListMultimap.create();
+            ArrayListMultimap<Hash, TxOffsetPair> mapBlockTx = ArrayListMultimap.create();
             for (Transaction tx : getTransactions(true)) {
-                Map<Sha256Hash, Integer> appearsIn = tx.getAppearsInHashes();
+                Map<Hash, Integer> appearsIn = tx.getAppearsInHashes();
                 if (appearsIn == null) continue;  // Pending.
-                for (Map.Entry<Sha256Hash, Integer> block : appearsIn.entrySet())
+                for (Map.Entry<Hash, Integer> block : appearsIn.entrySet())
                     mapBlockTx.put(block.getKey(), new TxOffsetPair(tx, block.getValue()));
             }
-            for (Sha256Hash blockHash : mapBlockTx.keySet())
+            for (Hash blockHash : mapBlockTx.keySet())
                 Collections.sort(mapBlockTx.get(blockHash));
 
-            List<Sha256Hash> oldBlockHashes = new ArrayList<Sha256Hash>(oldBlocks.size());
+            List<Hash> oldBlockHashes = new ArrayList<Hash>(oldBlocks.size());
             log.info("Old part of chain (top to bottom):");
             for (StoredBlock b : oldBlocks) {
                 log.info("  {}", b.getHeader().getHashAsString());
@@ -2535,10 +2535,10 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
 
             // For each block in the old chain, disconnect the transactions in reverse order.
             LinkedList<Transaction> oldChainTxns = Lists.newLinkedList();
-            for (Sha256Hash blockHash : oldBlockHashes) {
+            for (Hash blockHash : oldBlockHashes) {
                 for (TxOffsetPair pair : mapBlockTx.get(blockHash)) {
                     Transaction tx = pair.tx;
-                    final Sha256Hash txHash = tx.getHash();
+                    final Hash txHash = tx.getHash();
                     if (tx.isCoinBase()) {
                         // All the transactions that we have in our wallet which spent this coinbase are now invalid
                         // and will never confirm. Hopefully this should never happen - that's the point of the maturity
@@ -2688,7 +2688,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
 
     /** Returns the hash of the last seen best-chain block, or null if the wallet is too old to store this data. */
     @Nullable
-    public Sha256Hash getLastBlockSeenHash() {
+    public Hash getLastBlockSeenHash() {
         lock.lock();
         try {
             return lastBlockSeenHash;
@@ -2697,7 +2697,7 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
         }
     }
 
-    public void setLastBlockSeenHash(@Nullable Sha256Hash lastBlockSeenHash) {
+    public void setLastBlockSeenHash(@Nullable Hash lastBlockSeenHash) {
         lock.lock();
         try {
             this.lastBlockSeenHash = lastBlockSeenHash;

@@ -166,7 +166,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                 // checkpoints list and we therefore only check non-checkpoints for duplicated transactions here. See the
                 // BIP30 document for more details on this: https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki
                 for (Transaction tx : block.transactions) {
-                    Sha256Hash hash = tx.getHash();
+                    Hash hash = tx.getHash();
                     // If we already have unspent outputs for this hash, we saw the tx already. Either the block is
                     // being added twice (bug) or the block is a BIP30 violator.
                     if (blockStore.hasUnspentOutputs(hash, tx.getOutputs().size()))
@@ -213,7 +213,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                         txOutsSpent.add(prevOut);
                     }
                 }
-                Sha256Hash hash = tx.getHash();
+                Hash hash = tx.getHash();
                 for (TransactionOutput out : tx.getOutputs()) {
                     valueOut = valueOut.add(out.getValue());
                     // For each output, add it to the set of unspent outputs so it can be consumed in future.
@@ -295,7 +295,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                 final boolean enforcePayToScriptHash = newBlock.getHeader().getTimeSeconds() >= NetworkParameters.BIP16_ENFORCE_TIME;
                 if (!params.isCheckpoint(newBlock.getHeight())) {
                     for(Transaction tx : transactions) {
-                        Sha256Hash hash = tx.getHash();
+                        Hash hash = tx.getHash();
                         if (blockStore.hasUnspentOutputs(hash, tx.getOutputs().size()))
                             throw new VerificationException("Block failed BIP30 test!");
                     }
@@ -335,7 +335,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                             txOutsSpent.add(prevOut);
                         }
                     }
-                    Sha256Hash hash = tx.getHash();
+                    Hash hash = tx.getHash();
                     for (TransactionOutput out : tx.getOutputs()) {
                         valueOut = valueOut.add(out.getValue());
                         StoredTransactionOutput newOut = new StoredTransactionOutput(hash, out.getIndex(), out.getValue(),
@@ -384,7 +384,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                 txOutChanges = block.getTxOutChanges();
                 if (!params.isCheckpoint(newBlock.getHeight()))
                     for(StoredTransactionOutput out : txOutChanges.txOutsCreated) {
-                        Sha256Hash hash = out.getHash();
+                        Hash hash = out.getHash();
                         if (blockStore.getTransactionOutput(hash, out.getIndex()) != null)
                             throw new VerificationException("Block failed BIP30 test!");
                     }
@@ -443,7 +443,7 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
     }
 
     @Override
-    protected StoredBlock getStoredBlockInCurrentScope(Sha256Hash hash) throws BlockStoreException {
+    protected StoredBlock getStoredBlockInCurrentScope(Hash hash) throws BlockStoreException {
         checkState(lock.isHeldByCurrentThread());
         return blockStore.getOnceUndoableStoredBlock(hash);
     }

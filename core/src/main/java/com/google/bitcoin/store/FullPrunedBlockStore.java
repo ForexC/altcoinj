@@ -16,7 +16,7 @@
 
 package com.google.bitcoin.store;
 
-import com.google.bitcoin.core.Sha256Hash;
+import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.StoredBlock;
 import com.google.bitcoin.core.StoredTransactionOutput;
 import com.google.bitcoin.core.StoredUndoableBlock;
@@ -64,19 +64,19 @@ public interface FullPrunedBlockStore extends BlockStore {
      * Returns the StoredBlock that was added as a StoredUndoableBlock given a hash. The returned values block.getHash()
      * method will be equal to the parameter. If no such block is found, returns null.
      */
-    StoredBlock getOnceUndoableStoredBlock(Sha256Hash hash) throws BlockStoreException;
+    StoredBlock getOnceUndoableStoredBlock(Hash hash) throws BlockStoreException;
 
     /**
      * Returns a {@link StoredUndoableBlock} whose block.getHash() method will be equal to the parameter. If no such
-     * block is found, returns null. Note that this may return null more often than get(Sha256Hash hash) as not all
+     * block is found, returns null. Note that this may return null more often than get(Hash hash) as not all
      * {@link StoredBlock}s have a {@link StoredUndoableBlock} copy stored as well.
      */
-    StoredUndoableBlock getUndoBlock(Sha256Hash hash) throws BlockStoreException;
+    StoredUndoableBlock getUndoBlock(Hash hash) throws BlockStoreException;
     
     /**
      * Gets a {@link StoredTransactionOutput} with the given hash and index, or null if none is found
      */
-    StoredTransactionOutput getTransactionOutput(Sha256Hash hash, long index) throws BlockStoreException;
+    StoredTransactionOutput getTransactionOutput(Hash hash, long index) throws BlockStoreException;
     
     /**
      * Adds a {@link StoredTransactionOutput} to the list of unspent TransactionOutputs
@@ -94,7 +94,7 @@ public interface FullPrunedBlockStore extends BlockStore {
      * True if this store has any unspent outputs from a transaction with a hash equal to the first parameter
      * @param numOutputs the number of outputs the given transaction has
      */
-    boolean hasUnspentOutputs(Sha256Hash hash, int numOutputs) throws BlockStoreException;
+    boolean hasUnspentOutputs(Hash hash, int numOutputs) throws BlockStoreException;
     
     /**
      * Returns the {@link StoredBlock} that represents the top of the chain of greatest total work that has

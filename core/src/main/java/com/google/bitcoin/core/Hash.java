@@ -31,26 +31,26 @@ import java.util.Arrays;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * A Sha256Hash just wraps a byte[] so that equals and hashcode work correctly, allowing it to be used as keys in a
+ * A Hash just wraps a byte[] so that equals and hashcode work correctly, allowing it to be used as keys in a
  * map. It also checks that the length is correct and provides a bit more type safety.
  */
-public class Sha256Hash implements Serializable, Comparable {
+public class Hash implements Serializable, Comparable {
     private byte[] bytes;
-    public static final Sha256Hash ZERO_HASH = new Sha256Hash(new byte[32]);
+    public static final Hash ZERO_HASH = new Hash(new byte[32]);
 
     /**
-     * Creates a Sha256Hash by wrapping the given byte array. It must be 32 bytes long.
+     * Creates a Hash by wrapping the given byte array. It must be 32 bytes long.
      */
-    public Sha256Hash(byte[] rawHashBytes) {
+    public Hash(byte[] rawHashBytes) {
         checkArgument(rawHashBytes.length == 32);
         this.bytes = rawHashBytes;
 
     }
 
     /**
-     * Creates a Sha256Hash by decoding the given hex string. It must be 64 characters long.
+     * Creates a Hash by decoding the given hex string. It must be 64 characters long.
      */
-    public Sha256Hash(String hexString) {
+    public Hash(String hexString) {
         checkArgument(hexString.length() == 64);
         this.bytes = Hex.decode(hexString);
     }
@@ -58,10 +58,10 @@ public class Sha256Hash implements Serializable, Comparable {
     /**
      * Calculates the (one-time) hash of contents and returns it as a new wrapped hash.
      */
-    public static Sha256Hash create(byte[] contents) {
+    public static Hash create(byte[] contents) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            return new Sha256Hash(digest.digest(contents));
+            return new Hash(digest.digest(contents));
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  // Cannot happen.
         }
@@ -70,8 +70,8 @@ public class Sha256Hash implements Serializable, Comparable {
     /**
      * Calculates the hash of the hash of the contents. This is a standard operation in Bitcoin.
      */
-    public static Sha256Hash createDouble(byte[] contents) {
-        return new Sha256Hash(Utils.doubleDigest(contents));
+    public static Hash createDouble(byte[] contents) {
+        return new Hash(Utils.doubleDigest(contents));
     }
 
     /**
@@ -79,7 +79,7 @@ public class Sha256Hash implements Serializable, Comparable {
      * small files.
      * @throws IOException
      */
-    public static Sha256Hash hashFileContents(File f) throws IOException {
+    public static Hash hashFileContents(File f) throws IOException {
         FileInputStream in = new FileInputStream(f);
         try {
             return create(ByteStreams.toByteArray(in));
@@ -93,8 +93,8 @@ public class Sha256Hash implements Serializable, Comparable {
      */
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof Sha256Hash)) return false;
-        return Arrays.equals(bytes, ((Sha256Hash) other).bytes);
+        if (!(other instanceof Hash)) return false;
+        return Arrays.equals(bytes, ((Hash) other).bytes);
     }
 
     /**
@@ -124,15 +124,15 @@ public class Sha256Hash implements Serializable, Comparable {
         return bytes;
     }
 
-    public Sha256Hash duplicate() {
-        return new Sha256Hash(bytes);
+    public Hash duplicate() {
+        return new Hash(bytes);
     }
 
     @Override
     public int compareTo(Object o) {
-        checkArgument(o instanceof Sha256Hash);
+        checkArgument(o instanceof Hash);
         int thisCode = this.hashCode();
-        int oCode = ((Sha256Hash)o).hashCode();
+        int oCode = ((Hash)o).hashCode();
         return thisCode > oCode ? 1 : (thisCode == oCode ? 0 : -1);
     }
 }

@@ -1,6 +1,6 @@
 package com.google.bitcoin.protocols.channels;
 
-import com.google.bitcoin.core.Sha256Hash;
+import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.TransactionBroadcaster;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.Wallet;
@@ -30,7 +30,7 @@ public class ChannelTestUtils {
         }
 
         @Override
-        public void channelOpen(Sha256Hash contractHash) {
+        public void channelOpen(Hash contractHash) {
             q.add(contractHash);
         }
 

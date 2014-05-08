@@ -28,10 +28,10 @@ import java.util.List;
 public class GetBlocksMessage extends Message {
     private static final long serialVersionUID = 3479412877853645644L;
     protected long version;
-    protected List<Sha256Hash> locator;
-    protected Sha256Hash stopHash;
+    protected List<Hash> locator;
+    protected Hash stopHash;
 
-    public GetBlocksMessage(NetworkParameters params, List<Sha256Hash> locator, Sha256Hash stopHash) {
+    public GetBlocksMessage(NetworkParameters params, List<Hash> locator, Hash stopHash) {
         super(params);
         this.version = protocolVersion;
         this.locator = locator;
@@ -57,25 +57,25 @@ public class GetBlocksMessage extends Message {
         int startCount = (int) readVarInt();
         if (startCount > 500)
             throw new ProtocolException("Number of locators cannot be > 500, received: " + startCount);
-        locator = new ArrayList<Sha256Hash>(startCount);
+        locator = new ArrayList<Hash>(startCount);
         for (int i = 0; i < startCount; i++) {
             locator.add(readHash());
         }
         stopHash = readHash();
     }
 
-    public List<Sha256Hash> getLocator() {
+    public List<Hash> getLocator() {
         return locator;
     }
 
-    public Sha256Hash getStopHash() {
+    public Hash getStopHash() {
         return stopHash;
     }
 
     public String toString() {
         StringBuffer b = new StringBuffer();
         b.append("getblocks: ");
-        for (Sha256Hash hash : locator) {
+        for (Hash hash : locator) {
             b.append(hash.toString());
             b.append(" ");
         }
@@ -89,7 +89,7 @@ public class GetBlocksMessage extends Message {
         // identifiers that spans the entire chain with exponentially increasing gaps between
         // them, until we end up at the genesis block. See CBlockLocator::Set()
         stream.write(new VarInt(locator.size()).encode());
-        for (Sha256Hash hash : locator) {
+        for (Hash hash : locator) {
             // Have to reverse as wire format is little endian.
             stream.write(Utils.reverseBytes(hash.getBytes()));
         }
@@ -109,7 +109,7 @@ public class GetBlocksMessage extends Message {
     @Override
     public int hashCode() {
         int hashCode = (int) version ^ "getblocks".hashCode();
-        for (Sha256Hash aLocator : locator) hashCode ^= aLocator.hashCode();
+        for (Hash aLocator : locator) hashCode ^= aLocator.hashCode();
         hashCode ^= stopHash.hashCode();
         return hashCode;
     }

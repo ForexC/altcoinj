@@ -36,7 +36,7 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
     static final int MESSAGE_LENGTH = 36;
 
     /** Hash of the transaction to which we refer. */
-    private Sha256Hash hash;
+    private Hash hash;
     /** Which output of that transaction we are talking about. */
     private long index;
 
@@ -52,12 +52,12 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
             this.fromTx = fromTx;
         } else {
             // This happens when constructing the genesis block.
-            hash = Sha256Hash.ZERO_HASH;
+            hash = Hash.ZERO_HASH;
         }
         length = MESSAGE_LENGTH;
     }
 
-    public TransactionOutPoint(NetworkParameters params, long index, Sha256Hash hash) {
+    public TransactionOutPoint(NetworkParameters params, long index, Hash hash) {
         super(params);
         this.index = index;
         this.hash = hash;
@@ -161,12 +161,12 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
     /**
      * Returns the hash of the transaction this outpoint references/spends/is connected to.
      */
-    public Sha256Hash getHash() {
+    public Hash getHash() {
         maybeParse();
         return hash;
     }
 
-    void setHash(Sha256Hash hash) {
+    void setHash(Hash hash) {
         this.hash = hash;
     }
 

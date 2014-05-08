@@ -173,7 +173,7 @@ public class WalletProtobufSerializer {
         }
 
         // Populate the lastSeenBlockHash field.
-        Sha256Hash lastSeenBlockHash = wallet.getLastBlockSeenHash();
+        Hash lastSeenBlockHash = wallet.getLastBlockSeenHash();
         if (lastSeenBlockHash != null) {
             walletBuilder.setLastSeenBlockHash(hashToByteString(lastSeenBlockHash));
             walletBuilder.setLastSeenBlockHeight(wallet.getLastBlockSeenHeight());
@@ -256,7 +256,7 @@ public class WalletProtobufSerializer {
                 .setValue(output.getValue().longValue());
             final TransactionInput spentBy = output.getSpentBy();
             if (spentBy != null) {
-                Sha256Hash spendingHash = spentBy.getParentTransaction().getHash();
+                Hash spendingHash = spentBy.getParentTransaction().getHash();
                 int spentByTransactionIndex = spentBy.getParentTransaction().getInputs().indexOf(spentBy);
                 outputBuilder.setSpentByTransactionHash(hashToByteString(spendingHash))
                              .setSpentByTransactionIndex(spentByTransactionIndex);
@@ -265,9 +265,9 @@ public class WalletProtobufSerializer {
         }
         
         // Handle which blocks tx was seen in.
-        final Map<Sha256Hash, Integer> appearsInHashes = tx.getAppearsInHashes();
+        final Map<Hash, Integer> appearsInHashes = tx.getAppearsInHashes();
         if (appearsInHashes != null) {
-            for (Map.Entry<Sha256Hash, Integer> entry : appearsInHashes.entrySet()) {
+            for (Map.Entry<Hash, Integer> entry : appearsInHashes.entrySet()) {
                 txBuilder.addBlockHash(hashToByteString(entry.getKey()));
                 txBuilder.addBlockRelativityOffsets(entry.getValue());
             }
@@ -319,7 +319,7 @@ public class WalletProtobufSerializer {
                 // Copy in the overriding transaction, if available.
                 // (A dead coinbase transaction has no overriding transaction).
                 if (confidence.getOverridingTransaction() != null) {
-                    Sha256Hash overridingHash = confidence.getOverridingTransaction().getHash();
+                    Hash overridingHash = confidence.getOverridingTransaction().getHash();
                     confidenceBuilder.setOverridingTransaction(hashToByteString(overridingHash));
                 }
             }
@@ -346,12 +346,12 @@ public class WalletProtobufSerializer {
         txBuilder.setConfidence(confidenceBuilder);
     }
 
-    public static ByteString hashToByteString(Sha256Hash hash) {
+    public static ByteString hashToByteString(Hash hash) {
         return ByteString.copyFrom(hash.getBytes());
     }
 
-    public static Sha256Hash byteStringToHash(ByteString bs) {
-        return new Sha256Hash(bs.toByteArray());
+    public static Hash byteStringToHash(ByteString bs) {
+        return new Hash(bs.toByteArray());
     }
 
     /**
@@ -570,7 +570,7 @@ public class WalletProtobufSerializer {
         }
 
         // Transaction should now be complete.
-        Sha256Hash protoHash = byteStringToHash(txProto.getHash());
+        Hash protoHash = byteStringToHash(txProto.getHash());
         if (!tx.getHash().equals(protoHash))
             throw new UnreadableWalletException(String.format("Transaction did not deserialize completely: %s vs %s", tx.getHash(), protoHash));
         if (txMap.containsKey(txProto.getHash()))

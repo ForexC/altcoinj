@@ -75,7 +75,7 @@ public class ExamplePaymentChannelServer implements PaymentChannelServerListener
         // things. In a real app this object would be connected to some business logic.
         return new ServerConnectionEventHandler() {
             @Override
-            public void channelOpen(Sha256Hash channelId) {
+            public void channelOpen(Hash channelId) {
                 log.info("Channel open for {}: {}.", clientAddress, channelId);
 
                 // Try to get the state object from the stored state set in our wallet
