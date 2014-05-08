@@ -64,6 +64,7 @@ public abstract class NetworkParameters implements Serializable {
 
     // TODO: Seed nodes should be here as well.
 
+    protected BigInteger maxMoney;
     protected Block genesisBlock;
     protected ProofOfWork proofOfWork;
     protected BigInteger proofOfWorkLimit;
@@ -97,7 +98,7 @@ public abstract class NetworkParameters implements Serializable {
         genesisBlock = createGenesis(this);
     }
 
-    private static Block createGenesis(NetworkParameters n) {
+    protected static Block createGenesis(NetworkParameters n) {
         Block genesisBlock = new Block(n);
         Transaction t = new Transaction(n);
         try {
@@ -130,11 +131,6 @@ public abstract class NetworkParameters implements Serializable {
      * mined upon and thus will be quickly re-orged out as long as the majority are enforcing the rule.
      */
     public static final int BIP16_ENFORCE_TIME = 1333238400;
-    
-    /**
-     * The maximum money to be generated
-     */
-    public static final BigInteger MAX_MONEY = new BigInteger("21000000", 10).multiply(COIN);
 
     /** Alias for TestNet3Params.get(), use that instead. */
     @Deprecated
@@ -338,4 +334,6 @@ public abstract class NetworkParameters implements Serializable {
     public byte[] getAlertSigningKey() {
         return alertSigningKey;
     }
+
+    public BigInteger getMaxMoney() { return maxMoney; }
 }

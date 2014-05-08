@@ -22,13 +22,17 @@ import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
 import java.math.BigInteger;
 
+import static com.google.bitcoin.core.Utils.COIN;
+
 /**
  * Network parameters used by the bitcoinj unit tests (and potentially your own). This lets you solve a block using
  * {@link com.google.bitcoin.core.Block#solve()} by setting difficulty to the easiest possible.
  */
 public class UnitTestParams extends NetworkParameters {
     public UnitTestParams() {
-        super();
+        maxMoney = new BigInteger("21000000", 10).multiply(COIN);
+        alertSigningKey = SATOSHI_KEY;
+        genesisBlock = createGenesis(this);
         id = ID_UNITTESTNET;
         packetMagic = 0x0b110907;
         addressHeader = 111;

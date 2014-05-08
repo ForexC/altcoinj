@@ -87,10 +87,10 @@ public class UtilsTest {
         assertEquals("54321.12345", bitcoinValueToPlainString(toNanoCoins("54321.12345")));
         assertEquals("654321.123456", bitcoinValueToPlainString(toNanoCoins("654321.123456")));
         assertEquals("7654321.1234567", bitcoinValueToPlainString(toNanoCoins("7654321.1234567")));
-        try {
-            assertEquals("87654321.12345678", bitcoinValueToPlainString(toNanoCoins("87654321.12345678")));
-            Assert.fail();  // More than MAX_MONEY
-        } catch (Exception e) {}
+        //try {
+        //    assertEquals("87654321.12345678", bitcoinValueToPlainString(toNanoCoins("87654321.12345678")));
+        //    Assert.fail();  // More than MAX_MONEY
+        //} catch (Exception e) {}
 
         // check there are no trailing zeros
         assertEquals("1", bitcoinValueToPlainString(toNanoCoins("1.0")));

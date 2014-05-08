@@ -20,6 +20,9 @@ import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
+import java.math.BigInteger;
+
+import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -28,7 +31,9 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public class TestNet2Params extends NetworkParameters {
     public TestNet2Params() {
-        super();
+        maxMoney = new BigInteger("21000000", 10).multiply(COIN);
+        alertSigningKey = SATOSHI_KEY;
+        genesisBlock = createGenesis(this);
         id = ID_TESTNET;
         packetMagic = 0xfabfb5daL;
         port = 18333;
