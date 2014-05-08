@@ -32,7 +32,7 @@ public class UnitTestParams extends NetworkParameters {
     public UnitTestParams() {
         maxMoney = new BigInteger("21000000", 10).multiply(COIN);
         alertSigningKey = SATOSHI_KEY;
-        genesisBlock = createGenesis(this);
+        genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_UNITTESTNET;
         packetMagic = 0x0b110907;
         addressHeader = 111;

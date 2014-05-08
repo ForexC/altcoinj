@@ -33,7 +33,7 @@ public class TestNet2Params extends NetworkParameters {
     public TestNet2Params() {
         maxMoney = new BigInteger("21000000", 10).multiply(COIN);
         alertSigningKey = SATOSHI_KEY;
-        genesisBlock = createGenesis(this);
+        genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
         packetMagic = 0xfabfb5daL;
         port = 18333;

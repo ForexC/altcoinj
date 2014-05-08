@@ -34,7 +34,7 @@ public class TestNet3Params extends NetworkParameters {
     public TestNet3Params() {
         maxMoney = new BigInteger("21000000", 10).multiply(COIN);
         alertSigningKey = SATOSHI_KEY;
-        genesisBlock = createGenesis(this);
+        genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
         // Genesis hash is 000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943
         packetMagic = 0x0b110907;
