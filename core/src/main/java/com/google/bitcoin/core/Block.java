@@ -500,7 +500,13 @@ public class Block extends Message {
      * resulting bytes.
      */
     private Hash calculateHash() {
-        return params.getProofOfWork().getHash(this);
+        try {
+            ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
+            writeHeader(bos);
+            return new Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
+        } catch (IOException e) {
+            throw new RuntimeException(e); // Cannot happen.
+        }
     }
 
     /**
