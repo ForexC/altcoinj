@@ -94,6 +94,10 @@ public abstract class NetworkParameters implements Serializable {
     protected Map<Integer, Hash> checkpoints = new HashMap<Integer, Hash>();
 
     protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey) {
+        return createGenesis(n, input, scriptPubKey, null);
+    }
+
+    protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey, Hash root) {
         Block genesisBlock = new Block(n);
         Transaction t = new Transaction(n);
         try {
@@ -109,6 +113,7 @@ public abstract class NetworkParameters implements Serializable {
             throw new RuntimeException(e);
         }
         genesisBlock.addTransaction(t);
+        if(root != null) genesisBlock.setMerkleRoot(root);
         return genesisBlock;
     }
 
