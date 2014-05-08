@@ -18,6 +18,7 @@ package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.Block;
 import com.google.bitcoin.core.NetworkParameters;
+import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
 import java.math.BigInteger;
 
@@ -33,6 +34,7 @@ public class UnitTestParams extends NetworkParameters {
         addressHeader = 111;
         p2shHeader = 196;
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
+        proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = new BigInteger("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
         genesisBlock.setTime(System.currentTimeMillis() / 1000);
         genesisBlock.setDifficultyTarget(Block.EASIEST_DIFFICULTY_TARGET);

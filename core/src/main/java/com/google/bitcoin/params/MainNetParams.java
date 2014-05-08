@@ -19,6 +19,7 @@ package com.google.bitcoin.params;
 import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
+import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -30,6 +31,7 @@ public class MainNetParams extends NetworkParameters {
         super();
         interval = INTERVAL;
         targetTimespan = TARGET_TIMESPAN;
+        proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
         dumpedPrivateKeyHeader = 128;
         addressHeader = 0;

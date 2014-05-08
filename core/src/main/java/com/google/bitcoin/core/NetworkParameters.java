@@ -65,6 +65,7 @@ public abstract class NetworkParameters implements Serializable {
     // TODO: Seed nodes should be here as well.
 
     protected Block genesisBlock;
+    protected ProofOfWork proofOfWork;
     protected BigInteger proofOfWorkLimit;
     protected int port;
     protected long packetMagic;
@@ -327,6 +328,8 @@ public abstract class NetworkParameters implements Serializable {
     public BigInteger getProofOfWorkLimit() {
         return proofOfWorkLimit;
     }
+
+    public ProofOfWork getProofOfWork() { return proofOfWork; }
 
     /**
      * The key used to sign {@link com.google.bitcoin.core.AlertMessage}s. You can use {@link com.google.bitcoin.core.ECKey#verify(byte[], byte[], byte[])} to verify

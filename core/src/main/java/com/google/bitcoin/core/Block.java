@@ -500,13 +500,7 @@ public class Block extends Message {
      * resulting bytes.
      */
     private Hash calculateHash() {
-        try {
-            ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
-            writeHeader(bos);
-            return new Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
-        } catch (IOException e) {
-            throw new RuntimeException(e); // Cannot happen.
-        }
+        return params.getProofOfWork().getHash(this);
     }
 
     /**
@@ -642,18 +636,7 @@ public class Block extends Message {
         //
         // To prevent this attack from being possible, elsewhere we check that the difficultyTarget
         // field is of the right value. This requires us to have the preceeding blocks.
-        BigInteger target = getDifficultyTargetAsInteger();
-
-        BigInteger h = getHash().toBigInteger();
-        if (h.compareTo(target) > 0) {
-            // Proof of work check failed!
-            if (throwException)
-                throw new VerificationException("Hash is higher than target: " + getHashAsString() + " vs "
-                        + target.toString(16));
-            else
-                return false;
-        }
-        return true;
+        return params.getProofOfWork().check(this, throwException);
     }
 
     private void checkTimestamp() throws VerificationException {

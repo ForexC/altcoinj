@@ -18,6 +18,7 @@ package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
+import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -36,6 +37,7 @@ public class TestNet2Params extends NetworkParameters {
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
         interval = INTERVAL;
         targetTimespan = TARGET_TIMESPAN;
+        proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d0fffffL);
         dumpedPrivateKeyHeader = 239;
         genesisBlock.setTime(1296688602L);

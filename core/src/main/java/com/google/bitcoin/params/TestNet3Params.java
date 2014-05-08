@@ -18,6 +18,7 @@ package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
+import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 import org.spongycastle.util.encoders.Hex;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -34,6 +35,7 @@ public class TestNet3Params extends NetworkParameters {
         packetMagic = 0x0b110907;
         interval = INTERVAL;
         targetTimespan = TARGET_TIMESPAN;
+        proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
         port = 18333;
         addressHeader = 111;
