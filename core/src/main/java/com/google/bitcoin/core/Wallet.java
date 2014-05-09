@@ -27,6 +27,7 @@ import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.script.ScriptChunk;
 import com.google.bitcoin.store.UnreadableWalletException;
 import com.google.bitcoin.store.WalletProtobufSerializer;
+import com.google.bitcoin.utils.BaseTaggableObject;
 import com.google.bitcoin.utils.ListenerRegistration;
 import com.google.bitcoin.utils.Threading;
 import com.google.bitcoin.wallet.*;
@@ -98,7 +99,7 @@ import static com.google.common.base.Preconditions.*;
  * {@link Wallet#autosaveToFile(java.io.File, long, java.util.concurrent.TimeUnit, com.google.bitcoin.wallet.WalletFiles.Listener)}
  * for more information about this.</p>
  */
-public class Wallet implements Serializable, BlockChainListener, PeerFilterProvider {
+public class Wallet extends BaseTaggableObject implements Serializable, BlockChainListener, PeerFilterProvider {
     private static final Logger log = LoggerFactory.getLogger(Wallet.class);
     private static final long serialVersionUID = 2L;
     private static final int MINIMUM_BLOOM_DATA_LENGTH = 8;
@@ -3833,5 +3834,18 @@ public class Wallet implements Serializable, BlockChainListener, PeerFilterProvi
             }
         }.start();
         return rekeyTx;
+    }
+
+    /**
+     * Returns the wallet lock under which most operations happen. This is here to satisfy the
+     * {@link com.google.bitcoin.core.PeerFilterProvider} interface and generally should not be used directly by apps.
+     * In particular, do <b>not</b> hold this lock if you're display a send confirm screen to the user or for any other
+     * long length of time, as it may cause processing holdups elsewhere. Instead, for the "confirm payment screen"
+     * use case you should complete a candidate transaction, present it to the user (e.g. for fee purposes) and then
+     * when they confirm - which may be quite some time later - recalculate the transaction and check if it's the same.
+     * If not, redisplay the confirm window and try again.
+     */
+    public ReentrantLock getLock() {
+        return lock;
     }
 }
