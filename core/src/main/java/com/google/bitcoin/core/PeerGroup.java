@@ -139,10 +139,12 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
 
         @Override
         public void onBlocksDownloaded(Peer peer, Block block, int blocksLeft) {
-            double rate = checkNotNull(chain).getFalsePositiveRate();
-            if (rate > bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE) {
-                log.info("Force update Bloom filter due to high false positive rate");
-                recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND);
+            if(params.getBloomFiltersEnabled()) {
+                double rate = checkNotNull(chain).getFalsePositiveRate();
+                if (rate > bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE) {
+                    log.info("Force update Bloom filter due to high false positive rate");
+                    recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND);
+                }
             }
         }
     };
