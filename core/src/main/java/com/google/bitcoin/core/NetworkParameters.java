@@ -74,6 +74,7 @@ public abstract class NetworkParameters implements Serializable {
     protected int p2shHeader;
     protected int dumpedPrivateKeyHeader;
     protected int interval;
+    protected int intervalOffset = 0;
     protected int targetTimespan;
     protected byte[] alertSigningKey;
 
@@ -314,6 +315,10 @@ public abstract class NetworkParameters implements Serializable {
     public int getInterval() {
         return interval;
     }
+
+    /** For some reason some Litecoin retarget calculations are 1 away from how they are done in Bitcoin (bug?)
+     * We use this offset to handle this. **/
+    public int getIntervalOffset() { return intervalOffset; }
 
     /** What the easiest allowable proof of work should be. */
     public BigInteger getProofOfWorkLimit() {
