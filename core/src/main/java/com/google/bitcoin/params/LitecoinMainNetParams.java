@@ -39,11 +39,13 @@ public class LitecoinMainNetParams extends NetworkParameters {
     public static final int TARGET_SPACING = (int)(2.5 * 60);
     public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING;
 
+    public static final byte[] ALERT_KEY = Hex.decode("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");
+
     private static ScryptProofOfWork proofOfWorkInstance;
 
     public LitecoinMainNetParams() {
         maxMoney = new BigInteger("84000000", 10).multiply(COIN);
-        alertSigningKey = SATOSHI_KEY;
+        alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = INTERVAL;
         intervalOffset = 1;
