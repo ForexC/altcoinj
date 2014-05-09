@@ -50,6 +50,7 @@ public class UnitTestParams extends NetworkParameters {
         spendableCoinbaseDepth = 5;
         subsidyDecreaseBlockCount = 100;
         dnsSeeds = null;
+        bloomFiltersEnabled = true;
     }
 
     private static UnitTestParams instance;

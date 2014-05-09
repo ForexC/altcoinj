@@ -869,7 +869,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
                 requiresUpdateAll = requiresUpdateAll || p.isRequiringUpdateAllBloomFilter();
             }
 
-            if (elements > 0) {
+            if (params.bloomFiltersEnabled && elements > 0) {
                 // We stair-step our element count so that we avoid creating a filter with different parameters
                 // as much as possible as that results in a loss of privacy.
                 // The constant 100 here is somewhat arbitrary, but makes sense for small to medium wallets -
@@ -1066,7 +1066,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
             // Give the peer a filter that can be used to probabilistically drop transactions that
             // aren't relevant to our wallet. We may still receive some false positives, which is
             // OK because it helps improve wallet privacy. Old nodes will just ignore the message.
-            if (bloomFilter != null) peer.setBloomFilter(bloomFilter);
+            if (params.bloomFiltersEnabled && bloomFilter != null) peer.setBloomFilter(bloomFilter);
             // Link the peer to the memory pool so broadcast transactions have their confidence levels updated.
             peer.setDownloadData(false);
             // TODO: The peer should calculate the fast catchup time from the added wallets here.

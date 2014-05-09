@@ -81,6 +81,8 @@ public class MainNetParams extends NetworkParameters {
                 "dnsseed.bitcoin.dashjr.org",  // Luke Dashjr
                 "seed.bitcoinstats.com",       // Chris Decker
         };
+
+        bloomFiltersEnabled = true;
     }
 
     private static MainNetParams instance;

@@ -60,6 +60,8 @@ public class TestNet3Params extends NetworkParameters {
                 "testnet-seed.bitcoin.petertodd.org",
                 "testnet-seed.bluematt.me"
         };
+        
+        bloomFiltersEnabled = true;
     }
 
     private static TestNet3Params instance;

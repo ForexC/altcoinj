@@ -77,6 +77,8 @@ public abstract class NetworkParameters implements Serializable {
     protected int targetTimespan;
     protected byte[] alertSigningKey;
 
+    protected boolean bloomFiltersEnabled;
+
     /**
      * See getId(). This may be null for old deserialized wallets. In that case we derive it heuristically
      * by looking at the port number.
@@ -329,4 +331,6 @@ public abstract class NetworkParameters implements Serializable {
     }
 
     public BigInteger getMaxMoney() { return maxMoney; }
+
+    public boolean getBloomFiltersEnabled() { return bloomFiltersEnabled; }
 }
