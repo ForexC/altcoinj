@@ -40,8 +40,8 @@ public class TestNet2Params extends NetworkParameters {
         addressHeader = 111;
         p2shHeader = 196;
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
-        interval = INTERVAL;
-        targetTimespan = TARGET_TIMESPAN;
+        interval = MainNetParams.INTERVAL;
+        targetTimespan = MainNetParams.TARGET_TIMESPAN;
         proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d0fffffL);
         dumpedPrivateKeyHeader = 239;
