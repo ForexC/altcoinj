@@ -48,7 +48,7 @@ public class LitecoinMainNetParams extends NetworkParameters {
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = INTERVAL;
-        intervalOffset = 0;
+        intervalOffset = 1;
         targetTimespan = TARGET_TIMESPAN;
         if(proofOfWorkInstance == null)
             proofOfWork = new ScryptProofOfWork(1024, 1, 1, 32);

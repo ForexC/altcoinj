@@ -76,7 +76,7 @@ public abstract class NetworkParameters implements Serializable {
     protected int p2shHeader;
     protected int dumpedPrivateKeyHeader;
     protected int interval;
-    protected int intervalOffset = 1;
+    protected int intervalOffset = 0;
     protected int targetTimespan;
     protected byte[] alertSigningKey;
 
@@ -167,7 +167,7 @@ public abstract class NetworkParameters implements Serializable {
         // two weeks after the initial block chain download.
         long now = System.currentTimeMillis();
         StoredBlock cursor = blockStore.get(prev.getHash());
-        for (int i = 0; i < getInterval(storedPrev.getHeight()) - intervalOffset; i++) {
+        for (int i = 0; i < getInterval(storedPrev.getHeight()) - 1 + intervalOffset; i++) {
             if (cursor == null) {
                 // This should never happen. If it does, it means we are following an incorrect or busted chain.
                 throw new VerificationException(
