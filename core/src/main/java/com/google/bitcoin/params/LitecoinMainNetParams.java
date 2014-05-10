@@ -55,7 +55,7 @@ public class LitecoinMainNetParams extends NetworkParameters {
         proofOfWorkLimit = Utils.decodeCompactBits(0x1e0fffffL);
         dumpedPrivateKeyHeader = 128;
         addressHeader = 48;
-        p2shHeader = 5; // TODO: find real value!
+        p2shHeader = 5;
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
         port = 9333;
         packetMagic = 0xfbc0b6db;
