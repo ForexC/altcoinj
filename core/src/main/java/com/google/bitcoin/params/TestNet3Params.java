@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkState;
  * Parameters for the testnet, a separate public instance of Bitcoin that has relaxed rules suitable for development
  * and testing of applications and new Bitcoin versions.
  */
-public class TestNet3Params extends NetworkParameters {
+public class TestNet3Params extends TestNet2Params {
     public TestNet3Params() {
         maxMoney = new BigInteger("21000000", 10).multiply(COIN);
         alertSigningKey = SATOSHI_KEY;

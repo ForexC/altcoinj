@@ -19,6 +19,8 @@ package com.google.bitcoin.core;
 import com.google.bitcoin.params.*;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptOpCodes;
+import com.google.bitcoin.store.BlockStore;
+import com.google.bitcoin.store.BlockStoreException;
 import com.google.common.base.Objects;
 import org.spongycastle.util.encoders.Hex;
 
@@ -74,7 +76,7 @@ public abstract class NetworkParameters implements Serializable {
     protected int p2shHeader;
     protected int dumpedPrivateKeyHeader;
     protected int interval;
-    protected int intervalOffset = 0;
+    protected int intervalOffset = 1;
     protected int targetTimespan;
     protected byte[] alertSigningKey;
 
@@ -95,6 +97,97 @@ public abstract class NetworkParameters implements Serializable {
     protected int[] acceptableAddressCodes;
     protected String[] dnsSeeds;
     protected Map<Integer, Hash> checkpoints = new HashMap<Integer, Hash>();
+
+    /**
+     * Verifies block difficulty.
+     * Throws a {@link com.google.bitcoin.core.VerificationException} if the difficulty is invalid.
+     */
+    public void checkDifficulty(StoredBlock storedPrev, Block nextBlock, BlockStore blockStore)
+    throws BlockStoreException, VerificationException {
+        Block prev = storedPrev.getHeader();
+
+        // Is this supposed to be a difficulty transition point?
+        if (!shouldRetarget(storedPrev)) {
+            // No ... so check the difficulty didn't actually change.
+            if (nextBlock.getDifficultyTarget() != prev.getDifficultyTarget())
+                throw new VerificationException("Unexpected change in difficulty at height " + storedPrev.getHeight() +
+                        ": " + Long.toHexString(nextBlock.getDifficultyTarget()) + " vs " +
+                        Long.toHexString(prev.getDifficultyTarget()));
+            return;
+        }
+
+        int timespan = getTimespan(storedPrev, blockStore);
+
+        BigInteger newDifficulty = Utils.decodeCompactBits(prev.getDifficultyTarget());
+        newDifficulty = newDifficulty.multiply(BigInteger.valueOf(timespan));
+        newDifficulty = newDifficulty.divide(BigInteger.valueOf(getTargetTimespan(storedPrev.getHeight())));
+
+        if (newDifficulty.compareTo(proofOfWorkLimit) > 0) {
+            //log.info("Difficulty hit proof of work limit: {}", newDifficulty.toString(16));
+            newDifficulty = proofOfWorkLimit;
+        }
+
+        int accuracyBytes = (int) (nextBlock.getDifficultyTarget() >>> 24) - 3;
+        BigInteger receivedDifficulty = nextBlock.getDifficultyTargetAsInteger();
+
+        // The calculated difficulty is to a higher precision than received, so reduce here.
+        BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
+        newDifficulty = newDifficulty.and(mask);
+
+        if (newDifficulty.compareTo(receivedDifficulty) != 0)
+            throw new VerificationException("Network provided difficulty bits do not match what was calculated: " +
+                    receivedDifficulty.toString(16) + " vs " + newDifficulty.toString(16));
+    }
+
+    /** Return true when the difficulty should be adjusted. */
+    protected boolean shouldRetarget(StoredBlock storedPrev) {
+        return ((storedPrev.getHeight() + 1) % getInterval(storedPrev.getHeight()) == 0);
+    }
+
+    /** How many blocks pass between difficulty adjustment periods. Bitcoin standardises this to be 2015. */
+    public int getInterval(int height) {
+        return interval;
+    }
+
+    /**
+     * How much time in seconds is supposed to pass between "interval" blocks. If the actual elapsed time is
+     * significantly different from this value, the network difficulty formula will produce a different value. Both
+     * test and production Bitcoin networks use 2 weeks (1209600 seconds).
+     */
+    protected int getTargetTimespan(int height) {
+      return targetTimespan;
+    }
+
+    /** Measures the actual timespan since the last retarget. */
+    protected int getTimespan(StoredBlock storedPrev, BlockStore blockStore)
+    throws BlockStoreException, VerificationException {
+        Block prev = storedPrev.getHeader();
+
+        // We need to find a block far back in the chain. It's OK that this is expensive because it only occurs every
+        // two weeks after the initial block chain download.
+        long now = System.currentTimeMillis();
+        StoredBlock cursor = blockStore.get(prev.getHash());
+        for (int i = 0; i < getInterval(storedPrev.getHeight()) - intervalOffset; i++) {
+            if (cursor == null) {
+                // This should never happen. If it does, it means we are following an incorrect or busted chain.
+                throw new VerificationException(
+                        "Difficulty transition point but we did not find a way back to the genesis block.");
+            }
+            cursor = blockStore.get(cursor.getHeader().getPrevBlockHash());
+        }
+
+        Block blockIntervalAgo = cursor.getHeader();
+        int timespan = (int) (prev.getTimeSeconds() - blockIntervalAgo.getTimeSeconds());
+        // Limit the adjustment step.
+        int targetTimespan = getTargetTimespan(storedPrev.getHeight());
+        if (timespan < targetTimespan / 4)
+            timespan = targetTimespan / 4;
+        if (timespan > targetTimespan * 4)
+            timespan = targetTimespan * 4;
+
+        return timespan;
+    }
+
 
     protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey) {
         return createGenesis(n, input, scriptPubKey, null);
@@ -287,15 +380,6 @@ public abstract class NetworkParameters implements Serializable {
     }
 
     /**
-     * How much time in seconds is supposed to pass between "interval" blocks. If the actual elapsed time is
-     * significantly different from this value, the network difficulty formula will produce a different value. Both
-     * test and production Bitcoin networks use 2 weeks (1209600 seconds).
-     */
-    public int getTargetTimespan() {
-        return targetTimespan;
-    }
-
-    /**
      * The version codes that prefix addresses which are acceptable on this network. Although Satoshi intended these to
      * be used for "versioning", in fact they are today used to discriminate what kind of data is contained in the
      * address and to prevent accidentally sending coins across chains which would destroy them.
@@ -310,15 +394,6 @@ public abstract class NetworkParameters implements Serializable {
     public boolean allowEmptyPeerChain() {
         return true;
     }
-
-    /** How many blocks pass between difficulty adjustment periods. Bitcoin standardises this to be 2015. */
-    public int getInterval() {
-        return interval;
-    }
-
-    /** For some reason some Litecoin retarget calculations are 1 away from how they are done in Bitcoin (bug?)
-     * We use this offset to handle this. **/
-    public int getIntervalOffset() { return intervalOffset; }
 
     /** What the easiest allowable proof of work should be. */
     public BigInteger getProofOfWorkLimit() {

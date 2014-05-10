@@ -16,11 +16,13 @@
 
 package com.google.bitcoin.params;
 
-import com.google.bitcoin.core.NetworkParameters;
-import com.google.bitcoin.core.Utils;
+import com.google.bitcoin.core.*;
 import com.google.bitcoin.core.pows.Sha256ProofOfWork;
+import com.google.bitcoin.store.BlockStore;
+import com.google.bitcoin.store.BlockStoreException;
 
 import java.math.BigInteger;
+import java.util.Date;
 
 import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
@@ -54,6 +56,42 @@ public class TestNet2Params extends NetworkParameters {
         checkState(genesisHash.equals("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
         dnsSeeds = null;
         bloomFiltersEnabled = true;
+    }
+
+    // February 16th 2012
+    private static final Date DIFF_DATE = new Date(1329264000000L);
+
+    @Override
+    public void checkDifficulty(StoredBlock storedPrev, Block nextBlock, BlockStore blockStore)
+    throws BlockStoreException, VerificationException {
+        if(!shouldRetarget(storedPrev) && nextBlock.getTime().after(DIFF_DATE)) {
+            // After 15th February 2012 the rules on the testnet change to avoid people running up the difficulty
+            // and then leaving, making it too hard to mine a block. On non-difficulty transition points, easy
+            // blocks are allowed if there has been a span of 20 minutes without one.
+            Block prev = storedPrev.getHeader();
+            final long timeDelta = nextBlock.getTimeSeconds() - prev.getTimeSeconds();
+            // There is an integer underflow bug in bitcoin-qt that means mindiff blocks are accepted when time
+            // goes backwards.
+            if (timeDelta >= 0 && timeDelta <= MainNetParams.TARGET_SPACING * 2) {
+                // Walk backwards until we find a block that doesn't have the easiest proof of work, then check
+                // that difficulty is equal to that one.
+                StoredBlock cursor = storedPrev;
+                while (!cursor.getHeader().equals(genesisBlock) &&
+                        cursor.getHeight() % getInterval(storedPrev.getHeight()) != 0 &&
+                        cursor.getHeader().getDifficultyTargetAsInteger().equals(proofOfWorkLimit))
+                    cursor = cursor.getPrev(blockStore);
+                BigInteger cursorDifficulty = cursor.getHeader().getDifficultyTargetAsInteger();
+                BigInteger newDifficulty = nextBlock.getDifficultyTargetAsInteger();
+                if (!cursorDifficulty.equals(newDifficulty))
+                    throw new VerificationException("Testnet block transition that is not allowed: " +
+                            Long.toHexString(cursor.getHeader().getDifficultyTarget()) + " vs " +
+                            Long.toHexString(nextBlock.getDifficultyTarget()));
+            }
+
+        // If we are at a retarget interval or before Feb 15 2012, do a normal difficulty check
+        } else {
+            super.checkDifficulty(storedPrev, nextBlock, blockStore);
+        }
     }
 
     private static TestNet2Params instance;
