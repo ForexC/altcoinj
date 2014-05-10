@@ -32,6 +32,12 @@ import static com.google.common.base.Preconditions.checkState;
  * based on it.
  */
 public class TestNet2Params extends NetworkParameters {
+
+    // February 16th 2012
+    private static final Date DIFF_DATE = new Date(1329264000000L);
+
+    protected Date diffDate;
+
     public TestNet2Params() {
         maxMoney = new BigInteger("21000000", 10).multiply(COIN);
         alertSigningKey = SATOSHI_KEY;
@@ -44,6 +50,7 @@ public class TestNet2Params extends NetworkParameters {
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
         interval = MainNetParams.INTERVAL;
         targetTimespan = MainNetParams.TARGET_TIMESPAN;
+        targetSpacing = MainNetParams.TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d0fffffL);
         dumpedPrivateKeyHeader = 239;
@@ -56,15 +63,13 @@ public class TestNet2Params extends NetworkParameters {
         checkState(genesisHash.equals("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
         dnsSeeds = null;
         bloomFiltersEnabled = true;
+        diffDate = DIFF_DATE;
     }
-
-    // February 16th 2012
-    private static final Date DIFF_DATE = new Date(1329264000000L);
 
     @Override
     public void checkDifficulty(StoredBlock storedPrev, Block nextBlock, BlockStore blockStore)
     throws BlockStoreException, VerificationException {
-        if(!shouldRetarget(storedPrev) && nextBlock.getTime().after(DIFF_DATE)) {
+        if(!shouldRetarget(storedPrev) && nextBlock.getTime().after(diffDate)) {
             // After 15th February 2012 the rules on the testnet change to avoid people running up the difficulty
             // and then leaving, making it too hard to mine a block. On non-difficulty transition points, easy
             // blocks are allowed if there has been a span of 20 minutes without one.
@@ -72,7 +77,7 @@ public class TestNet2Params extends NetworkParameters {
             final long timeDelta = nextBlock.getTimeSeconds() - prev.getTimeSeconds();
             // There is an integer underflow bug in bitcoin-qt that means mindiff blocks are accepted when time
             // goes backwards.
-            if (timeDelta >= 0 && timeDelta <= MainNetParams.TARGET_SPACING * 2) {
+            if (timeDelta >= 0 && timeDelta <= targetSpacing * 2) {
                 // Walk backwards until we find a block that doesn't have the easiest proof of work, then check
                 // that difficulty is equal to that one.
                 StoredBlock cursor = storedPrev;

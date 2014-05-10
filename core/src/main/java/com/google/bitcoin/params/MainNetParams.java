@@ -47,6 +47,7 @@ public class MainNetParams extends NetworkParameters {
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY);
         interval = INTERVAL;
         targetTimespan = TARGET_TIMESPAN;
+        targetSpacing = TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
         dumpedPrivateKeyHeader = 128;

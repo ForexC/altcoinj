@@ -45,7 +45,7 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * The protocol version this library implements.
      */
-    public static final int PROTOCOL_VERSION = 70001;
+    public static final int PROTOCOL_VERSION = 70002;
 
     /**
      * The alert signing key originally owned by Satoshi, and now passed on to Gavin along with a few others.
@@ -78,6 +78,7 @@ public abstract class NetworkParameters implements Serializable {
     protected int interval;
     protected int intervalOffset = 0;
     protected int targetTimespan;
+    protected int targetSpacing;
     protected byte[] alertSigningKey;
 
     protected boolean bloomFiltersEnabled;

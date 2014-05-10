@@ -40,6 +40,7 @@ public class TestNet3Params extends TestNet2Params {
         packetMagic = 0x0b110907;
         interval = MainNetParams.INTERVAL;
         targetTimespan = MainNetParams.TARGET_TIMESPAN;
+        targetSpacing = MainNetParams.TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
         proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
         port = 18333;
