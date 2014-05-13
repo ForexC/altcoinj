@@ -17,7 +17,6 @@
 package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.Block;
-import com.google.bitcoin.core.pows.Sha256ProofOfWork;
 
 import java.math.BigInteger;
 

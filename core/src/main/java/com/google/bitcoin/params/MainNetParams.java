@@ -19,7 +19,7 @@ package com.google.bitcoin.params;
 import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
-import com.google.bitcoin.core.pows.Sha256ProofOfWork;
+import com.google.bitcoin.pows.Sha256ProofOfWork;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;

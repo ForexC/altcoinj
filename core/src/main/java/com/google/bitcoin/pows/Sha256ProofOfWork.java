@@ -1,4 +1,4 @@
-package com.google.bitcoin.core.pows;
+package com.google.bitcoin.pows;
 
 import static com.google.bitcoin.core.Utils.reverseBytes;
 import static com.google.bitcoin.core.Utils.doubleDigest;

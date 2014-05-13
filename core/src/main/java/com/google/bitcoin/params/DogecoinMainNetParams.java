@@ -17,17 +17,11 @@
 package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.*;
-import com.google.bitcoin.core.pows.ScryptProofOfWork;
-import com.google.bitcoin.script.Script;
-import com.google.bitcoin.script.ScriptOpCodes;
+import com.google.bitcoin.pows.ScryptProofOfWork;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
 import org.spongycastle.util.encoders.Hex;
 
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-
-import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
 
 /**

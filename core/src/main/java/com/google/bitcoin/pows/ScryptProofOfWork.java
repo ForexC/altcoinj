@@ -1,4 +1,4 @@
-package com.google.bitcoin.core.pows;
+package com.google.bitcoin.pows;
 
 import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.ProofOfWork;
@@ -6,7 +6,6 @@ import com.google.bitcoin.core.Utils;
 import com.lambdaworks.crypto.SCrypt;
 
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
 
 public class ScryptProofOfWork extends ProofOfWork {
     protected int N, p, r, dkLen;

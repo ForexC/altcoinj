@@ -17,9 +17,7 @@
 package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.*;
-import com.google.bitcoin.core.pows.ScryptProofOfWork;
-import com.google.bitcoin.store.BlockStore;
-import com.google.bitcoin.store.BlockStoreException;
+import com.google.bitcoin.pows.ScryptProofOfWork;
 import org.spongycastle.util.encoders.Hex;
 
 import java.math.BigInteger;
