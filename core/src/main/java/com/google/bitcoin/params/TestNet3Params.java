@@ -58,7 +58,6 @@ public class TestNet3Params extends TestNet2Params {
 
         dnsSeeds = new String[] {
                 "testnet-seed.bitcoin.petertodd.org",
-                "testnet-seed.bluematt.me"
         };
         
         bloomFiltersEnabled = true;
