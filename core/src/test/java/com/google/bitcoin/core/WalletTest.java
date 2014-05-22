@@ -51,6 +51,7 @@ import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.bitcoin.core.Utils.*;
@@ -1462,7 +1463,7 @@ public class WalletTest extends TestWithWallet {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = Wallet.ExceededMaxTransactionSize.class)
     public void respectMaxStandardSize() throws Exception {
         // Check that we won't create txns > 100kb. Average tx size is ~220 bytes so this would have to be enormous.
         sendMoneyToWallet(Utils.toNanoCoins(100, 0), AbstractBlockChain.NewBlockType.BEST_CHAIN);
@@ -1497,11 +1498,12 @@ public class WalletTest extends TestWithWallet {
         Transaction tx3 = createFakeTx(params, BigInteger.TEN, myAddress);
         wallet.receiveFromBlock(tx3, block, AbstractBlockChain.NewBlockType.BEST_CHAIN, 2);
 
-        // No way we can add nearly enough fee
+        // Not allowed to send dust.
         try {
             wallet.createSend(notMyAddr, BigInteger.ONE);
             fail();
-        } catch (IllegalArgumentException e) {
+        } catch (Wallet.DustySendRequested e) {
+            // Expected.
         }
         // Spend it all without fee enforcement
         SendRequest req = SendRequest.to(notMyAddr, BigInteger.TEN.add(BigInteger.ONE.add(BigInteger.ONE)));
@@ -2178,7 +2180,7 @@ public class WalletTest extends TestWithWallet {
         try {
             wallet.completeTx(request);
             fail();
-        } catch (InsufficientMoneyException.CouldNotAdjustDownwards e) {}
+        } catch (Wallet.CouldNotAdjustDownwards e) {}
         request.ensureMinRequiredFee = false;
         wallet.completeTx(request);
         wallet.commitTx(request.tx);
@@ -2318,5 +2320,39 @@ public class WalletTest extends TestWithWallet {
             }
         }
         assertTrue(TransactionSignature.isEncodingCanonical(dummySig));
+    }
+
+    @Test
+    public void riskAnalysis() throws Exception {
+        // Send a tx that is considered risky to the wallet, verify it doesn't show up in the balances.
+        final Transaction tx = createFakeTx(params, Utils.COIN, myAddress);
+        final AtomicBoolean bool = new AtomicBoolean();
+        wallet.setRiskAnalyzer(new RiskAnalysis.Analyzer() {
+            @Override
+            public RiskAnalysis create(Wallet wallet, Transaction wtx, List<Transaction> dependencies) {
+                RiskAnalysis.Result result = RiskAnalysis.Result.OK;
+                if (wtx.getHash().equals(tx.getHash()))
+                    result = RiskAnalysis.Result.NON_STANDARD;
+                final RiskAnalysis.Result finalResult = result;
+                return new RiskAnalysis() {
+                    @Override
+                    public Result analyze() {
+                        bool.set(true);
+                        return finalResult;
+                    }
+                };
+            }
+        });
+        assertTrue(wallet.isPendingTransactionRelevant(tx));
+        assertEquals(BigInteger.ZERO, wallet.getBalance());
+        assertEquals(BigInteger.ZERO, wallet.getBalance(Wallet.BalanceType.ESTIMATED));
+        wallet.receivePending(tx, null);
+        assertEquals(BigInteger.ZERO, wallet.getBalance());
+        assertEquals(BigInteger.ZERO, wallet.getBalance(Wallet.BalanceType.ESTIMATED));
+        assertTrue(bool.get());
+        // Confirm it in the same manner as how Bloom filtered blocks do. Verify it shows up.
+        StoredBlock block = createFakeBlock(blockStore, tx).storedBlock;
+        wallet.notifyTransactionIsInBlock(tx.getHash(), block, AbstractBlockChain.NewBlockType.BEST_CHAIN, 1);
+        assertEquals(Utils.COIN, wallet.getBalance());
     }
 }

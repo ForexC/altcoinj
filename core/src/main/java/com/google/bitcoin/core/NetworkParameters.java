@@ -129,15 +129,16 @@ public abstract class NetworkParameters implements Serializable {
         }
 
         int accuracyBytes = (int) (nextBlock.getDifficultyTarget() >>> 24) - 3;
-        BigInteger receivedDifficulty = nextBlock.getDifficultyTargetAsInteger();
+        long receivedDifficultyCompact = nextBlock.getDifficultyTarget();
 
         // The calculated difficulty is to a higher precision than received, so reduce here.
         BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
         newDifficulty = newDifficulty.and(mask);
+        long newDifficultyCompact = Utils.encodeCompactBits(newDifficulty);
 
-        if (newDifficulty.compareTo(receivedDifficulty) != 0)
+        if (newDifficultyCompact != receivedDifficultyCompact)
             throw new VerificationException("Network provided difficulty bits do not match what was calculated: " +
-                    receivedDifficulty.toString(16) + " vs " + newDifficulty.toString(16));
+                    newDifficultyCompact + " vs " + receivedDifficultyCompact);
     }
 
     /** Return true when the difficulty should be adjusted. */
