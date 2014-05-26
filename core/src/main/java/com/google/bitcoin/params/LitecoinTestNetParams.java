@@ -48,7 +48,7 @@ public class LitecoinTestNetParams extends TestNet2Params {
         targetSpacing = LitecoinMainNetParams.TARGET_SPACING;
         if(proofOfWorkInstance == null)
             proofOfWork = new ScryptProofOfWork(1024, 1, 1, 32);
-        proofOfWorkLimit = Utils.decodeCompactBits(0x1e0fffffL);
+        maxTarget = Utils.decodeCompactBits(0x1e0fffffL);
         dumpedPrivateKeyHeader = 128;
         addressHeader = 111;
         p2shHeader = 5;

@@ -88,13 +88,12 @@ public class Hash implements Serializable, Comparable {
         }
     }
 
-    /**
-     * Returns true if the hashes are equal.
-     */
     @Override
-    public boolean equals(Object other) {
-        if (!(other instanceof Hash)) return false;
-        return Arrays.equals(bytes, ((Hash) other).bytes);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Hash other = (Hash) o;
+        return Arrays.equals(bytes, other.bytes);
     }
 
     /**

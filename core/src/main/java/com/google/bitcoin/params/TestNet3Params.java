@@ -41,7 +41,7 @@ public class TestNet3Params extends TestNet2Params {
         targetTimespan = MainNetParams.TARGET_TIMESPAN;
         targetSpacing = MainNetParams.TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
-        proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
+        maxTarget = Utils.decodeCompactBits(0x1d00ffffL);
         port = 18333;
         addressHeader = 111;
         p2shHeader = 196;

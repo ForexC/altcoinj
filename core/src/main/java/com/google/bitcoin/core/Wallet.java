@@ -141,9 +141,9 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     // (so it would be wasteful to repeat). Thus we keep them around here for a while. If we drop our network
     // connections then the remote peers will forget that we were sent the tx data previously and send it again
     // when relaying a filtered merkleblock.
-    private final LinkedHashMap<Sha256Hash, Transaction> riskDropped = new LinkedHashMap<Sha256Hash, Transaction>() {
+    private final LinkedHashMap<Hash, Transaction> riskDropped = new LinkedHashMap<Hash, Transaction>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Sha256Hash, Transaction> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<Hash, Transaction> eldest) {
             return size() > 1000;
         }
     };

@@ -52,7 +52,7 @@ public class TestNet2Params extends NetworkParameters {
         targetTimespan = MainNetParams.TARGET_TIMESPAN;
         targetSpacing = MainNetParams.TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
-        proofOfWorkLimit = Utils.decodeCompactBits(0x1d0fffffL);
+        maxTarget = Utils.decodeCompactBits(0x1d0fffffL);
         dumpedPrivateKeyHeader = 239;
         genesisBlock.setTime(1296688602L);
         genesisBlock.setDifficultyTarget(0x1d07fff8L);
@@ -83,11 +83,11 @@ public class TestNet2Params extends NetworkParameters {
                 StoredBlock cursor = storedPrev;
                 while (!cursor.getHeader().equals(genesisBlock) &&
                         cursor.getHeight() % getInterval(storedPrev.getHeight()) != 0 &&
-                        cursor.getHeader().getDifficultyTargetAsInteger().equals(proofOfWorkLimit))
+                        cursor.getHeader().getDifficultyTargetAsInteger().equals(maxTarget))
                     cursor = cursor.getPrev(blockStore);
-                BigInteger cursorDifficulty = cursor.getHeader().getDifficultyTargetAsInteger();
-                BigInteger newDifficulty = nextBlock.getDifficultyTargetAsInteger();
-                if (!cursorDifficulty.equals(newDifficulty))
+                BigInteger cursorTarget = cursor.getHeader().getDifficultyTargetAsInteger();
+                BigInteger newTarget = nextBlock.getDifficultyTargetAsInteger();
+                if (!cursorTarget.equals(newTarget))
                     throw new VerificationException("Testnet block transition that is not allowed: " +
                             Long.toHexString(cursor.getHeader().getDifficultyTarget()) + " vs " +
                             Long.toHexString(nextBlock.getDifficultyTarget()));

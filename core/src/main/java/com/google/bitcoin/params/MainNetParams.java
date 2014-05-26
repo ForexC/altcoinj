@@ -49,7 +49,7 @@ public class MainNetParams extends NetworkParameters {
         targetTimespan = TARGET_TIMESPAN;
         targetSpacing = TARGET_SPACING;
         proofOfWork = Sha256ProofOfWork.get();
-        proofOfWorkLimit = Utils.decodeCompactBits(0x1d00ffffL);
+        maxTarget = Utils.decodeCompactBits(0x1d00ffffL);
         dumpedPrivateKeyHeader = 128;
         addressHeader = 0;
         p2shHeader = 5;

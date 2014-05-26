@@ -45,7 +45,7 @@ public class DogecoinMainNetParams extends NetworkParameters {
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY);
         if(proofOfWorkInstance == null)
             proofOfWork = new ScryptProofOfWork(1024, 1, 1, 32);
-        proofOfWorkLimit = Utils.decodeCompactBits(0x1e0fffffL);
+        maxTarget = Utils.decodeCompactBits(0x1e0fffffL);
         dumpedPrivateKeyHeader = 158;
         addressHeader = 30;
         p2shHeader = 22;

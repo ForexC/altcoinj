@@ -69,7 +69,7 @@ public abstract class NetworkParameters implements Serializable {
     protected BigInteger maxMoney;
     protected Block genesisBlock;
     protected ProofOfWork proofOfWork;
-    protected BigInteger proofOfWorkLimit;
+    protected BigInteger maxTarget;
     protected int port;
     protected long packetMagic;
     protected int addressHeader;
@@ -119,26 +119,26 @@ public abstract class NetworkParameters implements Serializable {
 
         int timespan = getTimespan(storedPrev, blockStore);
 
-        BigInteger newDifficulty = Utils.decodeCompactBits(prev.getDifficultyTarget());
-        newDifficulty = newDifficulty.multiply(BigInteger.valueOf(timespan));
-        newDifficulty = newDifficulty.divide(BigInteger.valueOf(getTargetTimespan(storedPrev.getHeight())));
+        BigInteger newTarget = Utils.decodeCompactBits(prev.getDifficultyTarget());
+        newTarget = newTarget.multiply(BigInteger.valueOf(timespan));
+        newTarget = newTarget.divide(BigInteger.valueOf(getTargetTimespan(storedPrev.getHeight())));
 
-        if (newDifficulty.compareTo(proofOfWorkLimit) > 0) {
-            //log.info("Difficulty hit proof of work limit: {}", newDifficulty.toString(16));
-            newDifficulty = proofOfWorkLimit;
+        if (newTarget.compareTo(maxTarget) > 0) {
+            //log.info("Difficulty hit proof of work limit: {}", newTarget.toString(16));
+            newTarget = maxTarget;
         }
 
         int accuracyBytes = (int) (nextBlock.getDifficultyTarget() >>> 24) - 3;
-        long receivedDifficultyCompact = nextBlock.getDifficultyTarget();
+        long receivedTargetCompact = nextBlock.getDifficultyTarget();
 
         // The calculated difficulty is to a higher precision than received, so reduce here.
         BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
-        newDifficulty = newDifficulty.and(mask);
-        long newDifficultyCompact = Utils.encodeCompactBits(newDifficulty);
+        newTarget = newTarget.and(mask);
+        long newTargetCompact = Utils.encodeCompactBits(newTarget);
 
-        if (newDifficultyCompact != receivedDifficultyCompact)
+        if (newTargetCompact != receivedTargetCompact)
             throw new VerificationException("Network provided difficulty bits do not match what was calculated: " +
-                    newDifficultyCompact + " vs " + receivedDifficultyCompact);
+                    newTargetCompact + " vs " + receivedTargetCompact);
     }
 
     /** Return true when the difficulty should be adjusted. */
@@ -269,10 +269,11 @@ public abstract class NetworkParameters implements Serializable {
     public abstract String getPaymentProtocolId();
 
     @Override
-    public boolean equals(Object other) {
-        if (!(other instanceof NetworkParameters)) return false;
-        NetworkParameters o = (NetworkParameters) other;
-        return o.getId().equals(getId());
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        NetworkParameters other = (NetworkParameters) o;
+        return getId().equals(other.getId());
     }
 
     @Override
@@ -397,9 +398,14 @@ public abstract class NetworkParameters implements Serializable {
         return true;
     }
 
-    /** What the easiest allowable proof of work should be. */
-    public BigInteger getProofOfWorkLimit() {
-        return proofOfWorkLimit;
+    /** How many blocks pass between difficulty adjustment periods. Bitcoin standardises this to be 2015. */
+    public int getInterval() {
+        return interval;
+    }
+
+    /** Maximum target represents the easiest allowable proof of work. */
+    public BigInteger getMaxTarget() {
+        return maxTarget;
     }
 
     public ProofOfWork getProofOfWork() { return proofOfWork; }
