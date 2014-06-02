@@ -17,6 +17,7 @@
 package com.google.bitcoin.core;
 
 import com.google.bitcoin.script.Script;
+import com.google.bitcoin.wallet.KeyBag;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
     /**
      * Deserializes the message. This is usually part of a transaction message.
      * @param params NetworkParameters object.
-     * @param offset The location of the first msg byte within the array.
+     * @param offset The location of the first payload byte within the array.
      * @param parseLazy Whether to perform a full parse immediately or delay until a read is requested.
      * @param parseRetain Whether to retain the backing byte array for quick reserialization.  
      * If true and the backing byte array is invalidated due to modification of a field then 
@@ -86,6 +87,7 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
         super(params, payload, offset, parent, parseLazy, parseRetain, MESSAGE_LENGTH);
     }
 
+    @Override
     protected void parseLite() throws ProtocolException {
         length = MESSAGE_LENGTH;
     }
@@ -134,19 +136,20 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
     /**
      * Returns the ECKey identified in the connected output, for either pay-to-address scripts or pay-to-key scripts.
      * If the script forms cannot be understood, throws ScriptException.
+     *
      * @return an ECKey or null if the connected key cannot be found in the wallet.
      */
     @Nullable
-    public ECKey getConnectedKey(Wallet wallet) throws ScriptException {
+    public ECKey getConnectedKey(KeyBag keyBag) throws ScriptException {
         TransactionOutput connectedOutput = getConnectedOutput();
         checkNotNull(connectedOutput, "Input is not connected so cannot retrieve key");
         Script connectedScript = connectedOutput.getScriptPubKey();
         if (connectedScript.isSentToAddress()) {
             byte[] addressBytes = connectedScript.getPubKeyHash();
-            return wallet.findKeyFromPubHash(addressBytes);
+            return keyBag.findKeyFromPubHash(addressBytes);
         } else if (connectedScript.isSentToRawPubKey()) {
             byte[] pubkeyBytes = connectedScript.getPubKey();
-            return wallet.findKeyFromPubKey(pubkeyBytes);
+            return keyBag.findKeyFromPubKey(pubkeyBytes);
         } else {
             throw new ScriptException("Could not understand form of connected output script: " + connectedScript);
         }
@@ -161,6 +164,7 @@ public class TransactionOutPoint extends ChildMessage implements Serializable {
     /**
      * Returns the hash of the transaction this outpoint references/spends/is connected to.
      */
+    @Override
     public Hash getHash() {
         maybeParse();
         return hash;

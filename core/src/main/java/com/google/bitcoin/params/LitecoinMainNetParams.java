@@ -16,35 +16,32 @@
 
 package com.google.bitcoin.params;
 
+import com.google.bitcoin.core.Coin;
 import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.pows.ScryptProofOfWork;
-import org.spongycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-
-import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Parameters for the main production network on which people trade goods and services.
  */
 public class LitecoinMainNetParams extends NetworkParameters {
-    public static final byte[] GENESIS_INPUT = Hex.decode("04b217bb4e022309");
-    public static final byte[] GENESIS_SCRIPTPUBKEY = Hex.decode("41044870341873accab7600d65e204bb4ae47c43d20c562ebfbf70cbcb188da98dec8b5ccf0526c8e4d954c6b47b898cc30adf1ff77c2e518ddc9785b87ccb90b8cdac");
+    public static final byte[] GENESIS_INPUT = Utils.HEX.decode("04b217bb4e022309");
+    public static final byte[] GENESIS_SCRIPTPUBKEY = Utils.HEX.decode("41044870341873accab7600d65e204bb4ae47c43d20c562ebfbf70cbcb188da98dec8b5ccf0526c8e4d954c6b47b898cc30adf1ff77c2e518ddc9785b87ccb90b8cdac");
     public static final Hash GENESIS_ROOT = new Hash("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9");
 
     public static final int TARGET_TIMESPAN = (int)(3.5 * 24 * 60 * 60);
     public static final int TARGET_SPACING = (int)(2.5 * 60);
     public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING;
 
-    public static final byte[] ALERT_KEY = Hex.decode("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");
+    public static final byte[] ALERT_KEY = Utils.HEX.decode("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");
 
     private static ScryptProofOfWork proofOfWorkInstance;
 
     public LitecoinMainNetParams() {
-        maxMoney = new BigInteger("84000000", 10).multiply(COIN);
+        maxMoney = Coin.COIN.multiply(84000000);
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = INTERVAL;

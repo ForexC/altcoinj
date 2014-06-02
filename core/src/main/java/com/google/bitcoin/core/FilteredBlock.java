@@ -41,6 +41,7 @@ public class FilteredBlock extends Message {
         super(params, payloadBytes, 0);
     }
     
+    @Override
     public void bitcoinSerializeToStream(OutputStream stream) throws IOException {
         if (header.transactions == null)
             header.bitcoinSerializeToStream(stream);
@@ -52,10 +53,10 @@ public class FilteredBlock extends Message {
     @Override
     void parse() throws ProtocolException {
         byte[] headerBytes = new byte[Block.HEADER_SIZE];
-        System.arraycopy(bytes, 0, headerBytes, 0, Block.HEADER_SIZE);
+        System.arraycopy(payload, 0, headerBytes, 0, Block.HEADER_SIZE);
         header = new Block(params, headerBytes);
         
-        merkleTree = new PartialMerkleTree(params, bytes, Block.HEADER_SIZE);
+        merkleTree = new PartialMerkleTree(params, payload, Block.HEADER_SIZE);
         
         length = Block.HEADER_SIZE + merkleTree.getMessageSize();
     }
@@ -89,6 +90,7 @@ public class FilteredBlock extends Message {
     }
     
     /** Gets the hash of the block represented in this Filtered Block */
+    @Override
     public Hash getHash() {
         return header.getHash();
     }

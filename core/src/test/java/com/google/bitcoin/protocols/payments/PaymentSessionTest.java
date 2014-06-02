@@ -28,11 +28,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 
+import static com.google.bitcoin.core.Coin.COIN;
 import static org.junit.Assert.*;
 
 public class PaymentSessionTest {
@@ -45,13 +45,13 @@ public class PaymentSessionTest {
     private ECKey serverKey;
     private Transaction tx;
     private TransactionOutput outputToMe;
-    BigInteger nanoCoins = Utils.toNanoCoins(1, 0);
+    private Coin coin = COIN;
 
     @Before
     public void setUp() throws Exception {
         serverKey = new ECKey();
         tx = new Transaction(params);
-        outputToMe = new TransactionOutput(params, tx, nanoCoins, serverKey);
+        outputToMe = new TransactionOutput(params, tx, coin, serverKey);
         tx.addOutput(outputToMe);
     }
 
@@ -60,7 +60,7 @@ public class PaymentSessionTest {
         // Create a PaymentRequest and make sure the correct values are parsed by the PaymentSession.
         MockPaymentSession paymentSession = new MockPaymentSession(newSimplePaymentRequest("test"));
         assertEquals(paymentRequestMemo, paymentSession.getMemo());
-        assertEquals(nanoCoins, paymentSession.getValue());
+        assertEquals(coin, paymentSession.getValue());
         assertEquals(simplePaymentUrl, paymentSession.getPaymentUrl());
         assertTrue(new Date(time * 1000L).equals(paymentSession.getDate()));
         assertTrue(paymentSession.getSendRequest().tx.equals(tx));
@@ -79,8 +79,8 @@ public class PaymentSessionTest {
         assertEquals(paymentMemo, payment.getMemo());
         assertEquals(merchantData, payment.getMerchantData());
         assertEquals(1, payment.getRefundToCount());
-        assertEquals(nanoCoins.longValue(), payment.getRefundTo(0).getAmount());
-        TransactionOutput refundOutput = new TransactionOutput(params, null, nanoCoins, refundAddr);
+        assertEquals(coin.value, payment.getRefundTo(0).getAmount());
+        TransactionOutput refundOutput = new TransactionOutput(params, null, coin, refundAddr);
         ByteString refundScript = ByteString.copyFrom(refundOutput.getScriptBytes());
         assertTrue(refundScript.equals(payment.getRefundTo(0).getScript()));
     }
@@ -97,7 +97,7 @@ public class PaymentSessionTest {
                 .setSerializedPaymentDetails(paymentDetails.toByteString())
                 .build();
         MockPaymentSession paymentSession = new MockPaymentSession(paymentRequest);
-        assertEquals(BigInteger.ZERO, paymentSession.getValue());
+        assertEquals(Coin.ZERO, paymentSession.getValue());
         assertNull(paymentSession.getPaymentUrl());
         assertNull(paymentSession.getMemo());
     }
@@ -149,7 +149,7 @@ public class PaymentSessionTest {
 
     private Protos.PaymentRequest newSimplePaymentRequest(String netID) {
         Protos.Output.Builder outputBuilder = Protos.Output.newBuilder()
-                .setAmount(nanoCoins.longValue())
+                .setAmount(coin.value)
                 .setScript(ByteString.copyFrom(outputToMe.getScriptBytes()));
         Protos.PaymentDetails paymentDetails = Protos.PaymentDetails.newBuilder()
                 .setNetwork(netID)
@@ -168,7 +168,7 @@ public class PaymentSessionTest {
 
     private Protos.PaymentRequest newExpiredPaymentRequest() {
         Protos.Output.Builder outputBuilder = Protos.Output.newBuilder()
-                .setAmount(nanoCoins.longValue())
+                .setAmount(coin.value)
                 .setScript(ByteString.copyFrom(outputToMe.getScriptBytes()));
         Protos.PaymentDetails paymentDetails = Protos.PaymentDetails.newBuilder()
                 .setNetwork("test")
@@ -197,6 +197,7 @@ public class PaymentSessionTest {
             return paymentLog;
         }
 
+        @Override
         protected ListenableFuture<PaymentProtocol.Ack> sendPayment(final URL url, final Protos.Payment payment) {
             paymentLog.add(new PaymentLogItem(url, payment));
             return null;

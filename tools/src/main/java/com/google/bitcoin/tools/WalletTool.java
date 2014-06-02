@@ -18,7 +18,10 @@
 package com.google.bitcoin.tools;
 
 import com.google.bitcoin.core.*;
+import com.google.bitcoin.crypto.DeterministicKey;
 import com.google.bitcoin.crypto.KeyCrypterException;
+import com.google.bitcoin.crypto.MnemonicCode;
+import com.google.bitcoin.crypto.MnemonicException;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.params.RegTestParams;
@@ -30,7 +33,9 @@ import com.google.bitcoin.store.*;
 import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.uri.BitcoinURIParseException;
 import com.google.bitcoin.utils.BriefLogFormatter;
+import com.google.bitcoin.wallet.DeterministicSeed;
 import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -61,18 +66,21 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 
+import static com.google.bitcoin.core.Coin.parseCoin;
+
 /**
  * A command line tool for manipulating wallets and working with Bitcoin.
  */
 public class WalletTool {
     private static final Logger log = LoggerFactory.getLogger(WalletTool.class);
 
+    private static OptionSet options;
     private static OptionSpec<Date> dateFlag;
     private static OptionSpec<Integer> unixtimeFlag;
+    private static OptionSpec<String> seedFlag, watchFlag;
 
     private static NetworkParameters params;
     private static File walletFile;
-    private static OptionSet options;
     private static BlockStore store;
     private static AbstractBlockChain chain;
     private static PeerGroup peers;
@@ -81,6 +89,7 @@ public class WalletTool {
     private static ValidationMode mode;
     private static String password;
     private static org.bitcoin.protocols.payments.Protos.PaymentRequest paymentRequest;
+    private static OptionSpec<Integer> lookaheadSize;
 
     public static class Condition {
         public enum Type {
@@ -117,9 +126,9 @@ public class WalletTool {
             value = s;
         }
 
-        public boolean matchBitcoins(BigInteger comparison) {
+        public boolean matchBitcoins(Coin comparison) {
             try {
-                BigInteger units = Utils.toNanoCoins(value);
+                Coin units = parseCoin(value);
                 switch (type) {
                     case LT: return comparison.compareTo(units) < 0;
                     case GT: return comparison.compareTo(units) > 0;
@@ -148,7 +157,9 @@ public class WalletTool {
         DELETE_KEY,
         SYNC,
         RESET,
-        SEND
+        SEND,
+        ENCRYPT,
+        DECRYPT,
     }
 
     public enum WaitForEnum {
@@ -174,23 +185,14 @@ public class WalletTool {
         parser.accepts("help");
         parser.accepts("force");
         parser.accepts("debuglog");
-        OptionSpec<String> walletFileName = parser.accepts("wallet")
-                .withRequiredArg()
-                .defaultsTo("wallet");
-        OptionSpec<NetworkEnum> netFlag = parser.accepts("net")
-                .withOptionalArg()
-                .ofType(NetworkEnum.class)
-                .defaultsTo(NetworkEnum.PROD);
-        dateFlag = parser.accepts("date")
-                .withRequiredArg()
-                .ofType(Date.class)
+        OptionSpec<String> walletFileName = parser.accepts("wallet").withRequiredArg().defaultsTo("wallet");
+        seedFlag = parser.accepts("seed").withRequiredArg();
+        watchFlag = parser.accepts("watchkey").withRequiredArg();
+        OptionSpec<NetworkEnum> netFlag = parser.accepts("net").withOptionalArg().ofType(NetworkEnum.class).defaultsTo(NetworkEnum.PROD);
+        dateFlag = parser.accepts("date").withRequiredArg().ofType(Date.class)
                 .withValuesConvertedBy(DateConverter.datePattern("yyyy/MM/dd"));
-        OptionSpec<WaitForEnum> waitForFlag = parser.accepts("waitfor")
-                .withRequiredArg()
-                .ofType(WaitForEnum.class);
-        OptionSpec<ValidationMode> modeFlag = parser.accepts("mode")
-                .withRequiredArg()
-                .ofType(ValidationMode.class)
+        OptionSpec<WaitForEnum> waitForFlag = parser.accepts("waitfor").withRequiredArg().ofType(WaitForEnum.class);
+        OptionSpec<ValidationMode> modeFlag = parser.accepts("mode").withRequiredArg().ofType(ValidationMode.class)
                 .defaultsTo(ValidationMode.SPV);
         OptionSpec<String> chainFlag = parser.accepts("chain").withRequiredArg();
         // For addkey/delkey.
@@ -207,6 +209,7 @@ public class WalletTool {
         parser.accepts("allow-unconfirmed");
         parser.accepts("offline");
         parser.accepts("ignore-mandatory-extensions");
+        lookaheadSize = parser.accepts("lookahead-size").withRequiredArg().ofType(Integer.class);
         OptionSpec<String> passwordFlag = parser.accepts("password").withRequiredArg();
         OptionSpec<String> paymentRequestLocation = parser.accepts("payment-request").withRequiredArg();
         parser.accepts("no-pki");
@@ -215,7 +218,8 @@ public class WalletTool {
 
         final String HELP_TEXT = Resources.toString(WalletTool.class.getResource("wallet-tool-help.txt"), Charsets.UTF_8);
 
-        if (args.length == 0 || options.has("help") || options.nonOptionArguments().size() < 1) {
+        if (args.length == 0 || options.has("help") ||
+                options.nonOptionArguments().size() < 1 || options.nonOptionArguments().contains("help")) {
             System.out.println(HELP_TEXT);
             return;
         }
@@ -321,9 +325,9 @@ public class WalletTool {
                     System.err.println("--payment-request and --output cannot be used together.");
                     return;
                 } else if (options.has(outputFlag)) {
-                    BigInteger fee = BigInteger.ZERO;
+                    Coin fee = Coin.ZERO;
                     if (options.has("fee")) {
-                        fee = Utils.toNanoCoins((String)options.valueOf("fee"));
+                        fee = parseCoin((String)options.valueOf("fee"));
                     }
                     String lockTime = null;
                     if (options.has("locktime")) {
@@ -338,6 +342,8 @@ public class WalletTool {
                     return;
                 }
                 break;
+            case ENCRYPT: encrypt(); break;
+            case DECRYPT: decrypt(); break;
         }
 
         if (!wallet.isConsistent()) {
@@ -366,6 +372,34 @@ public class WalletTool {
         shutdown();
     }
 
+    private static void encrypt() {
+        if (password == null) {
+            System.err.println("You must provide a --password");
+            return;
+        }
+        if (wallet.isEncrypted()) {
+            System.err.println("This wallet is already encrypted.");
+            return;
+        }
+        wallet.encrypt(password);
+    }
+
+    private static void decrypt() {
+        if (password == null) {
+            System.err.println("You must provide a --password");
+            return;
+        }
+        if (!wallet.isEncrypted()) {
+            System.err.println("This wallet is not encrypted.");
+            return;
+        }
+        try {
+            wallet.decrypt(password);
+        } catch (KeyCrypterException e) {
+            System.err.println("Password incorrect.");
+        }
+    }
+
     private static void addAddr() {
         String addr = (String) options.valueOf("addr");
         if (addr == null) {
@@ -381,7 +415,7 @@ public class WalletTool {
         }
     }
 
-    private static void send(List<String> outputs, BigInteger fee, String lockTimeStr, boolean allowUnconfirmed) throws VerificationException {
+    private static void send(List<String> outputs, Coin fee, String lockTimeStr, boolean allowUnconfirmed) throws VerificationException {
         try {
             // Convert the input strings to outputs.
             Transaction t = new Transaction(params);
@@ -393,12 +427,11 @@ public class WalletTool {
                 }
                 String destination = parts[0];
                 try {
-                    BigInteger value = Utils.toNanoCoins(parts[1]);
+                    Coin value = parseCoin(parts[1]);
                     if (destination.startsWith("0")) {
-                        boolean compressed = destination.startsWith("02") || destination.startsWith("03");
                         // Treat as a raw public key.
-                        BigInteger pubKey = new BigInteger(destination, 16);
-                        ECKey key = new ECKey(null, pubKey.toByteArray(), compressed);
+                        byte[] pubKey = new BigInteger(destination, 16).toByteArray();
+                        ECKey key = ECKey.fromPublicOnly(pubKey);
                         t.addOutput(value, key);
                     } else {
                         // Treat as an address.
@@ -474,7 +507,7 @@ public class WalletTool {
         } catch (ExecutionException e) {
             throw new RuntimeException(e);
         } catch (InsufficientMoneyException e) {
-            System.err.println("Insufficient funds: have " + Utils.bitcoinValueToFriendlyString(wallet.getBalance()));
+            System.err.println("Insufficient funds: have " + wallet.getBalance().toFriendlyString());
         }
     }
 
@@ -536,7 +569,7 @@ public class WalletTool {
     private static void send(PaymentSession session) {
         try {
             System.out.println("Payment Request");
-            System.out.println("Amount: " + session.getValue().doubleValue() / 100000 + "mBTC");
+            System.out.println("Coin: " + session.getValue().toFriendlyString() + " BTC");
             System.out.println("Date: " + session.getDate());
             System.out.println("Memo: " + session.getMemo());
             if (session.pkiVerificationData != null) {
@@ -584,7 +617,7 @@ public class WalletTool {
         } catch (InterruptedException e1) {
             // Ignore.
         } catch (InsufficientMoneyException e) {
-            System.err.println("Insufficient funds: have " + Utils.bitcoinValueToFriendlyString(wallet.getBalance()));
+            System.err.println("Insufficient funds: have " + wallet.getBalance().toFriendlyString());
         } catch (BlockStoreException e) {
             throw new RuntimeException(e);
         }
@@ -605,15 +638,15 @@ public class WalletTool {
                     }
 
                     @Override
-                    public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+                    public void onCoinsReceived(Wallet wallet, Transaction tx, Coin prevBalance, Coin newBalance) {
                         // Runs in a peer thread.
                         super.onCoinsReceived(wallet, tx, prevBalance, newBalance);
                         handleTx(tx);
                     }
 
                     @Override
-                    public void onCoinsSent(Wallet wallet, Transaction tx, BigInteger prevBalance,
-                                            BigInteger newBalance) {
+                    public void onCoinsSent(Wallet wallet, Transaction tx, Coin prevBalance,
+                                            Coin newBalance) {
                         // Runs in a peer thread.
                         super.onCoinsSent(wallet, tx, prevBalance, newBalance);
                         handleTx(tx);
@@ -646,9 +679,9 @@ public class WalletTool {
                     public synchronized void onChange() {
                         super.onChange();
                         saveWallet(walletFile);
-                        BigInteger balance = wallet.getBalance(Wallet.BalanceType.ESTIMATED);
+                        Coin balance = wallet.getBalance(Wallet.BalanceType.ESTIMATED);
                         if (condition.matchBitcoins(balance)) {
-                            System.out.println(Utils.bitcoinValueToFriendlyString(balance));
+                            System.out.println(balance.toFriendlyString());
                             latch.countDown();
                         }
                     }
@@ -766,11 +799,45 @@ public class WalletTool {
             System.err.println("Wallet creation requested but " + walletFile + " already exists, use --force");
             return;
         }
-        wallet = new Wallet(params);
-        if (password != null) {
-            wallet.encrypt(password);
-            wallet.addNewEncryptedKey(password);
+        if (options.has(seedFlag)) {
+            long creationTimeSecs = MnemonicCode.BIP39_STANDARDISATION_TIME_SECS;
+            if (options.has(dateFlag))
+                creationTimeSecs = options.valueOf(dateFlag).getTime() / 1000;
+            String seedStr = options.valueOf(seedFlag);
+            DeterministicSeed seed;
+            if (seedStr.contains(" ")) {
+                // Parse as mnemonic code.
+                final List<String> split = ImmutableList.copyOf(Splitter.on(" ").omitEmptyStrings().split(seedStr));
+                try {
+                    seed = new DeterministicSeed(split, creationTimeSecs);
+                } catch (MnemonicException.MnemonicLengthException e) {
+                    System.err.println("The seed did not have 12 words in, perhaps you need quotes around it?");
+                    return;
+                } catch (MnemonicException.MnemonicWordException e) {
+                    System.err.println("The seed contained an unrecognised word: " + e.badWord);
+                    return;
+                } catch (MnemonicException.MnemonicChecksumException e) {
+                    System.err.println("The seed did not pass checksumming, perhaps one of the words is wrong?");
+                    return;
+                }
+            } else {
+                // Parse as hex or base58
+                byte[] bits = Utils.parseAsHexOrBase58(seedStr);
+                if (bits.length != 16) {
+                    System.err.println("The given hex/base58 string is not 16 bytes");
+                    return;
+                }
+                seed = new DeterministicSeed(bits, creationTimeSecs);
+            }
+            wallet = Wallet.fromSeed(params, seed);
+        } else if (options.has(watchFlag)) {
+            DeterministicKey watchKey = DeterministicKey.deserializeB58(null, options.valueOf(watchFlag));
+            wallet = Wallet.fromWatchingKey(params, watchKey);
+        } else {
+            wallet = new Wallet(params);
         }
+        if (password != null)
+            wallet.encrypt(password);
         wallet.saveToFile(walletFile);
     }
 
@@ -786,6 +853,21 @@ public class WalletTool {
     }
 
     private static void addKey() {
+        // If we're being given precise details, we have to import the key.
+        if (options.has("privkey") || options.has("pubkey")) {
+            importKey();
+        } else {
+            if (options.has(lookaheadSize)) {
+                Integer size = options.valueOf(lookaheadSize);
+                log.info("Setting keychain lookahead size to {}", size);
+                wallet.setKeychainLookaheadSize(size);
+            }
+            ECKey key = wallet.freshReceiveKey();
+            System.out.println(key.toAddress(params) + " " + key);
+        }
+    }
+
+    private static void importKey() {
         ECKey key;
         long creationTimeSeconds = getCreationTimeSeconds();
         if (options.has("privkey")) {
@@ -805,7 +887,7 @@ public class WalletTool {
                     System.err.println("Could not understand --privkey as either hex or base58: " + data);
                     return;
                 }
-                key = new ECKey(new BigInteger(1, decode));
+                key = ECKey.fromPrivate(new BigInteger(1, decode));
             }
             if (options.has("pubkey")) {
                 // Give the user a hint.
@@ -814,13 +896,10 @@ public class WalletTool {
             key.setCreationTimeSeconds(creationTimeSeconds);
         } else if (options.has("pubkey")) {
             byte[] pubkey = Utils.parseAsHexOrBase58((String) options.valueOf("pubkey"));
-            key = new ECKey(null, pubkey);
+            key = ECKey.fromPublicOnly(pubkey);
             key.setCreationTimeSeconds(creationTimeSeconds);
         } else {
-            // Freshly generated key.
-            key = new ECKey();
-            if (creationTimeSeconds > 0)
-                key.setCreationTimeSeconds(creationTimeSeconds);
+            throw new IllegalStateException();
         }
         if (wallet.findKeyFromPubKey(key.getPubKey()) != null) {
             System.err.println("That key already exists in this wallet.");
@@ -834,11 +913,11 @@ public class WalletTool {
                 }
                 key = key.encrypt(wallet.getKeyCrypter(), wallet.getKeyCrypter().deriveKey(password));
             }
-            wallet.addKey(key);
+            wallet.importKey(key);
+            System.out.println(key.toAddress(params) + " " + key);
         } catch (KeyCrypterException kce) {
             System.err.println("There was an encryption related error when adding the key. The error was '" + kce.getMessage() + "'.");
         }
-        System.out.println(key.toAddress(params) + " " + key);
     }
 
     private static long getCreationTimeSeconds() {

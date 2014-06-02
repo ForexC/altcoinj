@@ -24,7 +24,6 @@ import com.google.bitcoin.store.BlockStoreException;
 import java.math.BigInteger;
 import java.util.Date;
 
-import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -39,7 +38,7 @@ public class TestNet2Params extends NetworkParameters {
     protected Date diffDate;
 
     public TestNet2Params() {
-        maxMoney = new BigInteger("21000000", 10).multiply(COIN);
+        maxMoney = Coin.COIN.multiply(21000000);
         alertSigningKey = SATOSHI_KEY;
         genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
@@ -107,6 +106,7 @@ public class TestNet2Params extends NetworkParameters {
         return instance;
     }
 
+    @Override
     public String getPaymentProtocolId() {
         return null;
     }

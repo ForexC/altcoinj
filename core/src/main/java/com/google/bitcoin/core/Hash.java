@@ -1,5 +1,6 @@
 /**
  * Copyright 2011 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,6 @@
 package com.google.bitcoin.core;
 
 import com.google.common.io.ByteStreams;
-import org.spongycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,7 +34,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  * A Hash just wraps a byte[] so that equals and hashcode work correctly, allowing it to be used as keys in a
  * map. It also checks that the length is correct and provides a bit more type safety.
  */
-public class Hash implements Serializable, Comparable {
+public class Hash implements Serializable, Comparable<Hash> {
     private byte[] bytes;
     public static final Hash ZERO_HASH = new Hash(new byte[32]);
 
@@ -52,7 +52,7 @@ public class Hash implements Serializable, Comparable {
      */
     public Hash(String hexString) {
         checkArgument(hexString.length() == 64);
-        this.bytes = Hex.decode(hexString);
+        this.bytes = Utils.HEX.decode(hexString);
     }
 
     /**
@@ -109,7 +109,7 @@ public class Hash implements Serializable, Comparable {
 
     @Override
     public String toString() {
-        return Utils.bytesToHexString(bytes);
+        return Utils.HEX.encode(bytes);
     }
 
     /**
@@ -128,7 +128,7 @@ public class Hash implements Serializable, Comparable {
     }
 
     @Override
-    public int compareTo(Object o) {
+    public int compareTo(Hash o) {
         checkArgument(o instanceof Hash);
         int thisCode = this.hashCode();
         int oCode = ((Hash)o).hashCode();

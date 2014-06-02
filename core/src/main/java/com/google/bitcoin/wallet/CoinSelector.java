@@ -1,8 +1,8 @@
 package com.google.bitcoin.wallet;
 
+import com.google.bitcoin.core.Coin;
 import com.google.bitcoin.core.TransactionOutput;
 
-import java.math.BigInteger;
 import java.util.LinkedList;
 
 /**
@@ -12,12 +12,13 @@ import java.util.LinkedList;
  * enough money in the wallet.
  */
 public interface CoinSelector {
-    public static final BigInteger ALL = new BigInteger("1111111111111111111111");
+    // TODO: handle this better! trying to send 1111 satoshis will send whole balance?!
+    public static final Coin ALL = Coin.valueOf(1111);
 
     /**
      * Creates a CoinSelection that tries to meet the target amount of value. The candidates list is given to
      * this call and can be edited freely. See the docs for CoinSelection to learn more, or look a the implementation
      * of {@link com.google.bitcoin.wallet.DefaultCoinSelector}.
      */
-    public CoinSelection select(BigInteger target, LinkedList<TransactionOutput> candidates);
+    public CoinSelection select(Coin target, LinkedList<TransactionOutput> candidates);
 }

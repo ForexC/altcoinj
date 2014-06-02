@@ -1,5 +1,6 @@
 /*
  * Copyright 2013 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +17,10 @@
 
 package com.google.bitcoin.params;
 
+import com.google.bitcoin.core.Coin;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.pows.Sha256ProofOfWork;
-import org.spongycastle.util.encoders.Hex;
 
-import java.math.BigInteger;
-
-import static com.google.bitcoin.core.Utils.COIN;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
@@ -31,7 +29,7 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public class TestNet3Params extends TestNet2Params {
     public TestNet3Params() {
-        maxMoney = new BigInteger("21000000", 10).multiply(COIN);
+        maxMoney = Coin.COIN.multiply(21000000);
         alertSigningKey = SATOSHI_KEY;
         genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
@@ -54,7 +52,7 @@ public class TestNet3Params extends TestNet2Params {
         subsidyDecreaseBlockCount = 210000;
         String genesisHash = genesisBlock.getHashAsString();
         checkState(genesisHash.equals("000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"));
-        alertSigningKey = Hex.decode("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
+        alertSigningKey = Utils.HEX.decode("04302390343f91cc401d56d68b123028bf52e5fca1939df127f63c6467cdf9c8e2c14b61104cf817d0b780da337893ecc4aaff1309e536162dabbdb45200ca2b0a");
 
         dnsSeeds = new String[] {
                 "testnet-seed.bitcoin.petertodd.org",
@@ -71,6 +69,7 @@ public class TestNet3Params extends TestNet2Params {
         return instance;
     }
 
+    @Override
     public String getPaymentProtocolId() {
         return PAYMENT_PROTOCOL_ID_TESTNET;
     }

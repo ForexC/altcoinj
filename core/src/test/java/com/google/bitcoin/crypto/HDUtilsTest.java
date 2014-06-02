@@ -1,24 +1,31 @@
+/*
+ * Copyright 2013 Matija Mazi
+ * Copyright 2014 Andreas Schildbach
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.bitcoin.crypto;
 
-import com.google.bitcoin.core.ECKey;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.spongycastle.crypto.params.ECDomainParameters;
-import org.spongycastle.math.ec.ECCurve;
-import org.spongycastle.math.ec.ECPoint;
-import org.spongycastle.util.encoders.Hex;
 
-import java.util.Arrays;
-import java.util.List;
+import static com.google.bitcoin.core.Utils.HEX;
 
 /**
  * @author Matija Mazi <br/>
  */
 public class HDUtilsTest {
-    private static final Logger log = LoggerFactory.getLogger(HDUtilsTest.class);
-
     @Test
     public void testHmac() throws Exception {
         String tv[] = {
@@ -109,58 +116,12 @@ public class HDUtilsTest {
     }
 
     private static byte[] getBytes(String[] hmacTestVectors, int i) {
-        return Hex.decode(hmacTestVectors[i]);
-    }
-
-    @Test
-    public void testPointCompression() {
-        List<String> testPubKey = Arrays.asList(
-                "044f355bdcb7cc0af728ef3cceb9615d90684bb5b2ca5f859ab0f0b704075871aa385b6b1b8ead809ca67454d9683fcf2ba03456d6fe2c4abe2b07f0fbdbb2f1c1",
-                "04ed83704c95d829046f1ac27806211132102c34e9ac7ffa1b71110658e5b9d1bdedc416f5cefc1db0625cd0c75de8192d2b592d7e3b00bcfb4a0e860d880fd1fc",
-                "042596957532fc37e40486b910802ff45eeaa924548c0e1c080ef804e523ec3ed3ed0a9004acf927666eee18b7f5e8ad72ff100a3bb710a577256fd7ec81eb1cb3");
-
-        ECDomainParameters ecp = ECKey.CURVE;
-        ECCurve curve = ecp.getCurve();
-
-        for (String testpkStr : testPubKey) {
-            byte[] testpk = Hex.decode(testpkStr);
-
-            ECPoint orig = curve.decodePoint(testpk);
-            ECPoint ptFlat = curve.decodePoint(orig.getEncoded(false));
-            ECPoint ptComp = curve.decodePoint(ptFlat.getEncoded(true));
-            ECPoint uncompressed = curve.decodePoint(ptComp.getEncoded(false));
-            ECPoint recompressed = curve.decodePoint(uncompressed.getEncoded(true));
-
-            log.info("====================");
-            log.info("Flat:              {}", asHexStr(ptFlat));
-            log.info("Compressed:        {}", asHexStr(ptComp));
-            log.info("Uncompressed:      {}", asHexStr(uncompressed));
-            log.info("Recompressed:      {}", asHexStr(recompressed));
-            log.info("Original (uncomp): {}", asHexStr(orig));
-
-            // assert point equality:
-            Assert.assertEquals(ptFlat, uncompressed);
-            Assert.assertEquals(ptFlat, ptComp);
-            Assert.assertEquals(ptComp, recompressed);
-            Assert.assertEquals(ptComp, orig);
-
-            // assert bytes equality:
-            Assert.assertArrayEquals(ptFlat.getEncoded(), uncompressed.getEncoded());
-            Assert.assertArrayEquals(ptComp.getEncoded(), recompressed.getEncoded());
-            Assert.assertArrayEquals(ptFlat.getEncoded(), orig.getEncoded());
-            Assert.assertFalse(Arrays.equals(ptFlat.getEncoded(), ptComp.getEncoded()));
-
-            // todo: assert header byte
-        }
-    }
-
-    private String asHexStr(ECPoint ptFlat) {
-        return new String(Hex.encode(ptFlat.getEncoded()));
+        return HEX.decode(hmacTestVectors[i]);
     }
 
     @Test
     public void testLongToByteArray() throws Exception {
         byte[] bytes = HDUtils.longTo4ByteArray(1026);
-        Assert.assertEquals("00000402", new String(Hex.encode(bytes)));
+        Assert.assertEquals("00000402", new String(HEX.encode(bytes)));
     }
 }

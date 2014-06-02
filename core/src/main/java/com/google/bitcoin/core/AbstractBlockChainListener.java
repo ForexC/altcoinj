@@ -41,7 +41,8 @@ public class AbstractBlockChainListener implements BlockChainListener {
     }
 
     @Override
-    public void notifyTransactionIsInBlock(Hash txHash, StoredBlock block, BlockChain.NewBlockType blockType,
+    public boolean notifyTransactionIsInBlock(Hash txHash, StoredBlock block, BlockChain.NewBlockType blockType,
                                            int relativityOffset) throws VerificationException {
+        return false;
     }
 }

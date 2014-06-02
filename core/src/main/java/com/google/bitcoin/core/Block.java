@@ -35,6 +35,7 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
+import static com.google.bitcoin.core.Coin.FIFTY_COINS;
 import static com.google.bitcoin.core.Utils.doubleDigest;
 import static com.google.bitcoin.core.Utils.doubleDigestTwoBuffers;
 
@@ -166,8 +167,8 @@ public class Block extends Message {
      * <p>The half-life is controlled by {@link com.google.bitcoin.core.NetworkParameters#getSubsidyDecreaseBlockCount()}.
      * </p>
      */
-    public BigInteger getBlockInflation(int height) {
-        return Utils.toNanoCoins(50, 0).shiftRight(height / params.getSubsidyDecreaseBlockCount());
+    public Coin getBlockInflation(int height) {
+        return FIFTY_COINS.shiftRight(height / params.getSubsidyDecreaseBlockCount());
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
@@ -189,7 +190,7 @@ public class Block extends Message {
         difficultyTarget = readUint32();
         nonce = readUint32();
 
-        hash = new Hash(Utils.reverseBytes(Utils.doubleDigest(bytes, offset, cursor)));
+        hash = new Hash(Utils.reverseBytes(Utils.doubleDigest(payload, offset, cursor)));
 
         headerParsed = true;
         headerBytesValid = parseRetain;
@@ -201,7 +202,7 @@ public class Block extends Message {
 
         cursor = offset + HEADER_SIZE;
         optimalEncodingMessageSize = HEADER_SIZE;
-        if (bytes.length == cursor) {
+        if (payload.length == cursor) {
             // This message is just a header, it has no transactions.
             transactionsParsed = true;
             transactionBytesValid = false;
@@ -212,7 +213,7 @@ public class Block extends Message {
         optimalEncodingMessageSize += VarInt.sizeOf(numTransactions);
         transactions = new ArrayList<Transaction>(numTransactions);
         for (int i = 0; i < numTransactions; i++) {
-            Transaction tx = new Transaction(params, bytes, cursor, this, parseLazy, parseRetain, UNKNOWN_LENGTH);
+            Transaction tx = new Transaction(params, payload, cursor, this, parseLazy, parseRetain, UNKNOWN_LENGTH);
             // Label the transaction as coming from the P2P network, so code that cares where we first saw it knows.
             tx.getConfidence().setSource(TransactionConfidence.Source.NETWORK);
             transactions.add(tx);
@@ -225,6 +226,7 @@ public class Block extends Message {
         transactionBytesValid = parseRetain;
     }
 
+    @Override
     void parse() throws ProtocolException {
         parseHeader();
         parseTransactions();
@@ -241,6 +243,7 @@ public class Block extends Message {
         return optimalEncodingMessageSize;
     }
 
+    @Override
     protected void parseLite() throws ProtocolException {
         // Ignore the header since it has fixed length. If length is not provided we will have to
         // invoke a light parse of transactions to calculate the length.
@@ -269,12 +272,12 @@ public class Block extends Message {
      * the cached header bytes.
      */
     private void maybeParseHeader() {
-        if (headerParsed || bytes == null)
+        if (headerParsed || payload == null)
             return;
         try {
             parseHeader();
             if (!(headerBytesValid || transactionBytesValid))
-                bytes = null;
+                payload = null;
         } catch (ProtocolException e) {
             throw new LazyParseException(
                     "ProtocolException caught during lazy parse.  For safe access to fields call ensureParsed before attempting read or write access",
@@ -283,14 +286,14 @@ public class Block extends Message {
     }
 
     private void maybeParseTransactions() {
-        if (transactionsParsed || bytes == null)
+        if (transactionsParsed || payload == null)
             return;
         try {
             parseTransactions();
             if (!parseRetain) {
                 transactionBytesValid = false;
                 if (headerParsed)
-                    bytes = null;
+                    payload = null;
             }
         } catch (ProtocolException e) {
             throw new LazyParseException(
@@ -303,6 +306,7 @@ public class Block extends Message {
      * Ensure the object is parsed if needed. This should be called in every getter before returning a value. If the
      * lazy parse flag is not set this is a method returns immediately.
      */
+    @Override
     protected void maybeParse() {
         throw new LazyParseException(
                 "checkParse() should never be called on a Block.  Instead use checkParseHeader() and checkParseTransactions()");
@@ -318,6 +322,7 @@ public class Block extends Message {
      *
      * @throws ProtocolException
      */
+    @Override
     public void ensureParsed() throws ProtocolException {
         try {
             maybeParseHeader();
@@ -372,8 +377,8 @@ public class Block extends Message {
     // default for testing
     void writeHeader(OutputStream stream) throws IOException {
         // try for cached write first
-        if (headerBytesValid && bytes != null && bytes.length >= offset + HEADER_SIZE) {
-            stream.write(bytes, offset, HEADER_SIZE);
+        if (headerBytesValid && payload != null && payload.length >= offset + HEADER_SIZE) {
+            stream.write(payload, offset, HEADER_SIZE);
             return;
         }
         // fall back to manual write
@@ -394,8 +399,8 @@ public class Block extends Message {
         }
 
         // confirmed we must have transactions either cached or as objects.
-        if (transactionBytesValid && bytes != null && bytes.length >= offset + length) {
-            stream.write(bytes, offset + HEADER_SIZE, length - HEADER_SIZE);
+        if (transactionBytesValid && payload != null && payload.length >= offset + length) {
+            stream.write(payload, offset + HEADER_SIZE, length - HEADER_SIZE);
             return;
         }
 
@@ -413,16 +418,17 @@ public class Block extends Message {
      *
      * @throws IOException
      */
+    @Override
     public byte[] bitcoinSerialize() {
         // we have completely cached byte array.
         if (headerBytesValid && transactionBytesValid) {
-            Preconditions.checkNotNull(bytes, "Bytes should never be null if headerBytesValid && transactionBytesValid");
-            if (length == bytes.length) {
-                return bytes;
+            Preconditions.checkNotNull(payload, "Bytes should never be null if headerBytesValid && transactionBytesValid");
+            if (length == payload.length) {
+                return payload;
             } else {
                 // byte array is offset so copy out the correct range.
                 byte[] buf = new byte[length];
-                System.arraycopy(bytes, offset, buf, 0, length);
+                System.arraycopy(payload, offset, buf, 0, length);
                 return buf;
             }
         }
@@ -456,7 +462,7 @@ public class Block extends Message {
      */
     private int guessTransactionsLength() {
         if (transactionBytesValid)
-            return bytes.length - HEADER_SIZE;
+            return payload.length - HEADER_SIZE;
         if (transactions == null)
             return 0;
         int len = VarInt.sizeOf(transactions.size());
@@ -467,6 +473,7 @@ public class Block extends Message {
         return len;
     }
 
+    @Override
     protected void unCache() {
         // Since we have alternate uncache methods to use internally this will only ever be called by a child
         // transaction so we only need to invalidate that part of the cache.
@@ -477,7 +484,7 @@ public class Block extends Message {
         maybeParseHeader();
         headerBytesValid = false;
         if (!transactionBytesValid)
-            bytes = null;
+            payload = null;
         hash = null;
         checksum = null;
     }
@@ -486,7 +493,7 @@ public class Block extends Message {
         maybeParseTransactions();
         transactionBytesValid = false;
         if (!headerBytesValid)
-            bytes = null;
+            payload = null;
         // Current implementation has to uncache headers as well as any change to a tx will alter the merkle root. In
         // future we can go more granular and cache merkle root separately so rest of the header does not need to be
         // rewritten.
@@ -522,6 +529,7 @@ public class Block extends Message {
      * Returns the hash of the block (which for a valid, solved block should be
      * below the target). Big endian.
      */
+    @Override
     public Hash getHash() {
         if (hash == null)
             hash = calculateHash();
@@ -942,7 +950,7 @@ public class Block extends Message {
     static private int txCounter;
 
     /** Adds a coinbase transaction to the block. This exists for unit tests. */
-    void addCoinbaseTransaction(byte[] pubKeyTo, BigInteger value) {
+    void addCoinbaseTransaction(byte[] pubKeyTo, Coin value) {
         unCacheTransactions();
         transactions = new ArrayList<Transaction>();
         Transaction coinbase = new Transaction(params);
@@ -953,7 +961,7 @@ public class Block extends Message {
         // counter in the scriptSig so every transaction has a different hash.
         coinbase.addInput(new TransactionInput(params, coinbase, new byte[]{(byte) txCounter, (byte) (txCounter++ >> 8)}));
         coinbase.addOutput(new TransactionOutput(params, coinbase, value,
-                ScriptBuilder.createOutputScript(new ECKey(null, pubKeyTo)).getProgram()));
+                ScriptBuilder.createOutputScript(ECKey.fromPublicOnly(pubKeyTo)).getProgram()));
         transactions.add(coinbase);
         coinbase.setParent(this);
         coinbase.length = coinbase.bitcoinSerialize().length;
@@ -962,12 +970,15 @@ public class Block extends Message {
 
     static final byte[] EMPTY_BYTES = new byte[32];
 
+    // It's pretty weak to have this around at runtime: fix later.
+    private static final byte[] pubkeyForTesting = new ECKey().getPubKey();
+
     /**
      * Returns a solved block that builds on top of this one. This exists for unit tests.
      */
     @VisibleForTesting
     public Block createNextBlock(Address to, long time) {
-        return createNextBlock(to, null, time, EMPTY_BYTES, Utils.toNanoCoins(50, 0));
+        return createNextBlock(to, null, time, pubkeyForTesting, FIFTY_COINS);
     }
 
     /**
@@ -975,7 +986,7 @@ public class Block extends Message {
      * In this variant you can specify a public key (pubkey) for use in generating coinbase blocks.
      */
     Block createNextBlock(@Nullable Address to, @Nullable TransactionOutPoint prevOut, long time,
-                          byte[] pubKey, BigInteger coinbaseValue) {
+                          byte[] pubKey, Coin coinbaseValue) {
         Block b = new Block(params);
         b.setDifficultyTarget(difficultyTarget);
         b.addCoinbaseTransaction(pubKey, coinbaseValue);
@@ -983,7 +994,7 @@ public class Block extends Message {
         if (to != null) {
             // Add a transaction paying 50 coins to the "to" address.
             Transaction t = new Transaction(params);
-            t.addOutput(new TransactionOutput(params, t, Utils.toNanoCoins(50, 0), to));
+            t.addOutput(new TransactionOutput(params, t, FIFTY_COINS, to));
             // The input does not really need to be a valid signature, as long as it has the right general form.
             TransactionInput input;
             if (prevOut == null) {
@@ -1018,21 +1029,21 @@ public class Block extends Message {
 
     @VisibleForTesting
     public Block createNextBlock(@Nullable Address to, TransactionOutPoint prevOut) {
-        return createNextBlock(to, prevOut, Utils.currentTimeSeconds(), EMPTY_BYTES, Utils.toNanoCoins(50, 0));
+        return createNextBlock(to, prevOut, Utils.currentTimeSeconds(), pubkeyForTesting, FIFTY_COINS);
     }
 
     @VisibleForTesting
-    public Block createNextBlock(@Nullable Address to, BigInteger value) {
-        return createNextBlock(to, null, Utils.currentTimeSeconds(), EMPTY_BYTES, value);
+    public Block createNextBlock(@Nullable Address to, Coin value) {
+        return createNextBlock(to, null, Utils.currentTimeSeconds(), pubkeyForTesting, value);
     }
 
     @VisibleForTesting
     public Block createNextBlock(@Nullable Address to) {
-        return createNextBlock(to, Utils.toNanoCoins(50, 0));
+        return createNextBlock(to, FIFTY_COINS);
     }
 
     @VisibleForTesting
-    public Block createNextBlockWithCoinbase(byte[] pubKey, BigInteger coinbaseValue) {
+    public Block createNextBlockWithCoinbase(byte[] pubKey, Coin coinbaseValue) {
         return createNextBlock(null, null, Utils.currentTimeSeconds(), pubKey, coinbaseValue);
     }
 
@@ -1042,7 +1053,7 @@ public class Block extends Message {
      */
     @VisibleForTesting
     Block createNextBlockWithCoinbase(byte[] pubKey) {
-        return createNextBlock(null, null, Utils.currentTimeSeconds(), pubKey, Utils.toNanoCoins(50, 0));
+        return createNextBlock(null, null, Utils.currentTimeSeconds(), pubKey, FIFTY_COINS);
     }
 
     @VisibleForTesting

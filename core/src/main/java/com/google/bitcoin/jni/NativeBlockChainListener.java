@@ -42,6 +42,6 @@ public class NativeBlockChainListener implements BlockChainListener {
                                         int relativityOffset) throws VerificationException;
 
     @Override
-    public native void notifyTransactionIsInBlock(Hash txHash, StoredBlock block, BlockChain.NewBlockType blockType,
-                                                  int relativityOffset) throws VerificationException;
+    public native boolean notifyTransactionIsInBlock(Hash txHash, StoredBlock block, BlockChain.NewBlockType blockType,
+                                                     int relativityOffset) throws VerificationException;
 }

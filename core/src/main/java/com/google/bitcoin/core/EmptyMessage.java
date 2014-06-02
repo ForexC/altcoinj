@@ -20,9 +20,7 @@ import java.io.OutputStream;
 
 /**
  * Parent class for header only messages that don't have a payload.
- * Currently this includes getaddr, ping, verack as well as the special bitcoinj class UnknownMessage
- *
- * @author git
+ * Currently this includes getaddr, verack and special bitcoinj class UnknownMessage.
  */
 public abstract class EmptyMessage extends Message {
     private static final long serialVersionUID = 8240801253854151802L;
@@ -36,8 +34,8 @@ public abstract class EmptyMessage extends Message {
         length = 0;
     }
 
-    public EmptyMessage(NetworkParameters params, byte[] msg, int offset) throws ProtocolException {
-        super(params, msg, offset);
+    public EmptyMessage(NetworkParameters params, byte[] payload, int offset) throws ProtocolException {
+        super(params, payload, offset);
         length = 0;
     }
 

@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.math.BigInteger;
 import java.util.Arrays;
 
 import static com.google.common.base.Preconditions.*;
@@ -101,9 +100,9 @@ public class PaymentChannelServerState {
     private byte[] bestValueSignature;
 
     // The total value locked into the multi-sig output and the value to us in the last signature the client provided
-    private BigInteger totalValue;
-    private BigInteger bestValueToMe = BigInteger.ZERO;
-    private BigInteger feePaidForPayment;
+    private Coin totalValue;
+    private Coin bestValueToMe = Coin.ZERO;
+    private Coin feePaidForPayment;
 
     // The refund/change transaction output that goes back to the client
     private TransactionOutput clientOutput;
@@ -119,14 +118,14 @@ public class PaymentChannelServerState {
             this.broadcaster = checkNotNull(broadcaster);
             this.multisigContract = checkNotNull(storedServerChannel.contract);
             this.multisigScript = multisigContract.getOutput(0).getScriptPubKey();
-            this.clientKey = new ECKey(null, multisigScript.getChunks().get(1).data);
+            this.clientKey = ECKey.fromPublicOnly(multisigScript.getChunks().get(1).data);
             this.clientOutput = checkNotNull(storedServerChannel.clientOutput);
             this.refundTransactionUnlockTimeSecs = storedServerChannel.refundTransactionUnlockTimeSecs;
             this.serverKey = checkNotNull(storedServerChannel.myKey);
             this.totalValue = multisigContract.getOutput(0).getValue();
             this.bestValueToMe = checkNotNull(storedServerChannel.bestValueToMe);
             this.bestValueSignature = storedServerChannel.bestValueSignature;
-            checkArgument(bestValueToMe.equals(BigInteger.ZERO) || bestValueSignature != null);
+            checkArgument(bestValueToMe.equals(Coin.ZERO) || bestValueSignature != null);
             this.storedServerChannel = storedServerChannel;
             storedServerChannel.state = this;
             this.state = State.READY;
@@ -192,7 +191,7 @@ public class PaymentChannelServerState {
 
         // Sign the refund tx with the scriptPubKey and return the signature. We don't have the spending transaction
         // so do the steps individually.
-        clientKey = new ECKey(null, clientMultiSigPubKey);
+        clientKey = ECKey.fromPublicOnly(clientMultiSigPubKey);
         Script multisigPubKey = ScriptBuilder.createMultiSigOutputScript(2, ImmutableList.of(clientKey, serverKey));
         // We are really only signing the fact that the transaction has a proper lock time and don't care about anything
         // else, so we sign SIGHASH_NONE and SIGHASH_ANYONECANPAY.
@@ -263,9 +262,9 @@ public class PaymentChannelServerState {
     }
 
     // Create a payment transaction with valueToMe going back to us
-    private synchronized Wallet.SendRequest makeUnsignedChannelContract(BigInteger valueToMe) {
+    private synchronized Wallet.SendRequest makeUnsignedChannelContract(Coin valueToMe) {
         Transaction tx = new Transaction(wallet.getParams());
-        if (!totalValue.subtract(valueToMe).equals(BigInteger.ZERO)) {
+        if (!totalValue.subtract(valueToMe).equals(Coin.ZERO)) {
             clientOutput.setValue(totalValue.subtract(valueToMe));
             tx.addOutput(clientOutput);
         }
@@ -283,17 +282,17 @@ public class PaymentChannelServerState {
      * @throws VerificationException If the signature does not verify or size is out of range (incl being rejected by the network as dust).
      * @return true if there is more value left on the channel, false if it is now fully used up.
      */
-    public synchronized boolean incrementPayment(BigInteger refundSize, byte[] signatureBytes) throws VerificationException, ValueOutOfRangeException, InsufficientMoneyException {
+    public synchronized boolean incrementPayment(Coin refundSize, byte[] signatureBytes) throws VerificationException, ValueOutOfRangeException, InsufficientMoneyException {
         checkState(state == State.READY);
         checkNotNull(refundSize);
         checkNotNull(signatureBytes);
         TransactionSignature signature = TransactionSignature.decodeFromBitcoin(signatureBytes, true);
         // We allow snapping to zero for the payment amount because it's treated specially later, but not less than
         // the dust level because that would prevent the transaction from being relayed/mined.
-        final boolean fullyUsedUp = refundSize.equals(BigInteger.ZERO);
+        final boolean fullyUsedUp = refundSize.equals(Coin.ZERO);
         if (refundSize.compareTo(clientOutput.getMinNonDustValue()) < 0 && !fullyUsedUp)
             throw new ValueOutOfRangeException("Attempt to refund negative value or value too small to be accepted by the network");
-        BigInteger newValueToMe = totalValue.subtract(refundSize);
+        Coin newValueToMe = totalValue.subtract(refundSize);
         if (newValueToMe.signum() < 0)
             throw new ValueOutOfRangeException("Attempt to refund more than the contract allows.");
         if (newValueToMe.compareTo(bestValueToMe) < 0)
@@ -439,14 +438,14 @@ public class PaymentChannelServerState {
     /**
      * Gets the highest payment to ourselves (which we will receive on settle(), not including fees)
      */
-    public synchronized BigInteger getBestValueToMe() {
+    public synchronized Coin getBestValueToMe() {
         return bestValueToMe;
     }
 
     /**
      * Gets the fee paid in the final payment transaction (only available if settle() did not throw an exception)
      */
-    public synchronized BigInteger getFeePaid() {
+    public synchronized Coin getFeePaid() {
         checkState(state == State.CLOSED || state == State.CLOSING);
         return feePaidForPayment;
     }

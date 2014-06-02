@@ -34,7 +34,6 @@ import org.junit.runners.Parameterized;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.CancelledKeyException;
@@ -48,6 +47,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.google.bitcoin.core.Coin.*;
 import static com.google.bitcoin.testing.FakeTxBuilder.*;
 import static org.junit.Assert.*;
 
@@ -84,6 +84,7 @@ public class PeerTest extends TestWithNetworkConnections {
         peer.addWallet(wallet);
     }
 
+    @Override
     @After
     public void tearDown() throws Exception {
         super.tearDown();
@@ -245,7 +246,7 @@ public class PeerTest extends TestWithNetworkConnections {
 
         peer.setDownloadData(true);
         // Make a transaction and tell the peer we have it.
-        BigInteger value = Utils.toNanoCoins(1, 0);
+        Coin value = COIN;
         Transaction tx = createFakeTx(unitTestParams, value, address);
         InventoryMessage inv = new InventoryMessage(unitTestParams);
         InventoryItem item = new InventoryItem(InventoryItem.Type.Transaction, tx.getHash());
@@ -278,7 +279,7 @@ public class PeerTest extends TestWithNetworkConnections {
         InboundMessageQueuer writeTarget2 = connect(peer2, peerVersion);
 
         // Make a tx and advertise it to one of the peers.
-        BigInteger value = Utils.toNanoCoins(1, 0);
+        Coin value = COIN;
         Transaction tx = createFakeTx(unitTestParams, value, this.address);
         InventoryMessage inv = new InventoryMessage(unitTestParams);
         InventoryItem item = new InventoryItem(InventoryItem.Type.Transaction, tx.getHash());
@@ -418,7 +419,7 @@ public class PeerTest extends TestWithNetworkConnections {
         Block b2 = makeSolvedTestBlock(b1);
         Transaction t = new Transaction(unitTestParams);
         t.addInput(b1.getTransactions().get(0).getOutput(0));
-        t.addOutput(new TransactionOutput(unitTestParams, t, BigInteger.ZERO, new byte[Block.MAX_BLOCK_SIZE - 1000]));
+        t.addOutput(new TransactionOutput(unitTestParams, t, Coin.ZERO, new byte[Block.MAX_BLOCK_SIZE - 1000]));
         b2.addTransaction(t);
 
         // Request the block.
@@ -543,14 +544,14 @@ public class PeerTest extends TestWithNetworkConnections {
         //      -> [t7]
         //      -> [t8]
         // The ones in brackets are assumed to be in the chain and are represented only by hashes.
-        Transaction t2 = FakeTxBuilder.createFakeTx(unitTestParams, Utils.toNanoCoins(1, 0), to);
+        Transaction t2 = FakeTxBuilder.createFakeTx(unitTestParams, COIN, to);
         Hash t5 = t2.getInput(0).getOutpoint().getHash();
-        Transaction t4 = FakeTxBuilder.createFakeTx(unitTestParams, Utils.toNanoCoins(1, 0), new ECKey());
+        Transaction t4 = FakeTxBuilder.createFakeTx(unitTestParams, COIN, new ECKey());
         Hash t6 = t4.getInput(0).getOutpoint().getHash();
-        t4.addOutput(Utils.toNanoCoins(1, 0), new ECKey());
+        t4.addOutput(COIN, new ECKey());
         Transaction t3 = new Transaction(unitTestParams);
         t3.addInput(t4.getOutput(0));
-        t3.addOutput(Utils.toNanoCoins(1, 0), new ECKey());
+        t3.addOutput(COIN, new ECKey());
         Transaction t1 = new Transaction(unitTestParams);
         t1.addInput(t2.getOutput(0));
         t1.addInput(t3.getOutput(0));
@@ -558,7 +559,7 @@ public class PeerTest extends TestWithNetworkConnections {
         t1.addInput(new TransactionInput(unitTestParams, t1, new byte[]{}, new TransactionOutPoint(unitTestParams, 0, someHash)));
         Hash anotherHash = new Hash("3b801dd82f01d17bbde881687bf72bc62e2faa8ab8133d36fcb8c3abe7459da6");
         t1.addInput(new TransactionInput(unitTestParams, t1, new byte[]{}, new TransactionOutPoint(unitTestParams, 1, anotherHash)));
-        t1.addOutput(Utils.toNanoCoins(1, 0), to);
+        t1.addOutput(COIN, to);
         t1 = FakeTxBuilder.roundTripTransaction(unitTestParams, t1);
         t2 = FakeTxBuilder.roundTripTransaction(unitTestParams, t2);
         t3 = FakeTxBuilder.roundTripTransaction(unitTestParams, t3);
@@ -653,19 +654,18 @@ public class PeerTest extends TestWithNetworkConnections {
         connectWithVersion(useNotFound ? 70001 : 60001);
         // Test that if we receive a relevant transaction that has a lock time, it doesn't result in a notification
         // until we explicitly opt in to seeing those.
-        ECKey key = new ECKey();
         Wallet wallet = new Wallet(unitTestParams);
-        wallet.addKey(key);
+        ECKey key = wallet.freshReceiveKey();
         peer.addWallet(wallet);
         final Transaction[] vtx = new Transaction[1];
         wallet.addEventListener(new AbstractWalletEventListener() {
             @Override
-            public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+            public void onCoinsReceived(Wallet wallet, Transaction tx, Coin prevBalance, Coin newBalance) {
                 vtx[0] = tx;
             }
         });
         // Send a normal relevant transaction, it's received correctly.
-        Transaction t1 = FakeTxBuilder.createFakeTx(unitTestParams, Utils.toNanoCoins(1, 0), key);
+        Transaction t1 = FakeTxBuilder.createFakeTx(unitTestParams, COIN, key);
         inbound(writeTarget, t1);
         GetDataMessage getdata = (GetDataMessage) outbound(writeTarget);
         if (useNotFound) {
@@ -678,7 +678,7 @@ public class PeerTest extends TestWithNetworkConnections {
         assertNotNull(vtx[0]);
         vtx[0] = null;
         // Send a timelocked transaction, nothing happens.
-        Transaction t2 = FakeTxBuilder.createFakeTx(unitTestParams, Utils.toNanoCoins(2, 0), key);
+        Transaction t2 = FakeTxBuilder.createFakeTx(unitTestParams, valueOf(2, 0), key);
         t2.setLockTime(999999);
         inbound(writeTarget, t2);
         Threading.waitForUserCode();
@@ -726,15 +726,14 @@ public class PeerTest extends TestWithNetworkConnections {
     private void checkTimeLockedDependency(boolean shouldAccept, boolean useNotFound) throws Exception {
         // Initial setup.
         connectWithVersion(useNotFound ? 70001 : 60001);
-        ECKey key = new ECKey();
         Wallet wallet = new Wallet(unitTestParams);
-        wallet.addKey(key);
+        ECKey key = wallet.freshReceiveKey();
         wallet.setAcceptRiskyTransactions(shouldAccept);
         peer.addWallet(wallet);
         final Transaction[] vtx = new Transaction[1];
         wallet.addEventListener(new AbstractWalletEventListener() {
             @Override
-            public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+            public void onCoinsReceived(Wallet wallet, Transaction tx, Coin prevBalance, Coin newBalance) {
                 vtx[0] = tx;
             }
         });
@@ -745,10 +744,10 @@ public class PeerTest extends TestWithNetworkConnections {
         Hash t3 = Hash.create("abc".getBytes(Charset.forName("UTF-8")));
         t2.addInput(new TransactionInput(unitTestParams, t2, new byte[]{}, new TransactionOutPoint(unitTestParams, 0, t3)));
         t2.getInput(0).setSequenceNumber(0xDEADBEEF);
-        t2.addOutput(Utils.toNanoCoins(1, 0), new ECKey());
+        t2.addOutput(COIN, new ECKey());
         Transaction t1 = new Transaction(unitTestParams);
         t1.addInput(t2.getOutput(0));
-        t1.addOutput(Utils.toNanoCoins(1, 0), key);  // Make it relevant.
+        t1.addOutput(COIN, key);  // Make it relevant.
         // Announce t1.
         InventoryMessage inv = new InventoryMessage(unitTestParams);
         inv.addTransaction(t1);
@@ -819,7 +818,7 @@ public class PeerTest extends TestWithNetworkConnections {
     public void exceptionListener() throws Exception {
         wallet.addEventListener(new AbstractWalletEventListener() {
             @Override
-            public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+            public void onCoinsReceived(Wallet wallet, Transaction tx, Coin prevBalance, Coin newBalance) {
                 throw new NullPointerException("boo!");
             }
         });
@@ -842,10 +841,10 @@ public class PeerTest extends TestWithNetworkConnections {
         connect();
         Transaction t1 = new Transaction(unitTestParams);
         t1.addInput(new TransactionInput(unitTestParams, t1, new byte[]{}));
-        t1.addOutput(Utils.toNanoCoins(1, 0), new ECKey().toAddress(unitTestParams));
+        t1.addOutput(COIN, new ECKey().toAddress(unitTestParams));
         Transaction t2 = new Transaction(unitTestParams);
         t2.addInput(t1.getOutput(0));
-        t2.addOutput(Utils.toNanoCoins(1, 0), wallet.getChangeAddress());
+        t2.addOutput(COIN, wallet.getChangeAddress());
         inbound(writeTarget, t2);
         final InventoryItem inventoryItem = new InventoryItem(InventoryItem.Type.Transaction, t2.getInput(0).getOutpoint().getHash());
         final NotFoundMessage nfm = new NotFoundMessage(unitTestParams, Lists.newArrayList(inventoryItem));

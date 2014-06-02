@@ -17,12 +17,11 @@
 package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.Block;
+import com.google.bitcoin.core.Coin;
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.pows.Sha256ProofOfWork;
 
 import java.math.BigInteger;
-
-import static com.google.bitcoin.core.Utils.COIN;
 
 /**
  * Network parameters used by the bitcoinj unit tests (and potentially your own). This lets you solve a block using
@@ -30,7 +29,7 @@ import static com.google.bitcoin.core.Utils.COIN;
  */
 public class UnitTestParams extends NetworkParameters {
     public UnitTestParams() {
-        maxMoney = new BigInteger("21000000", 10).multiply(COIN);
+        maxMoney = Coin.COIN.multiply(21000000);
         alertSigningKey = SATOSHI_KEY;
         genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_UNITTESTNET;
@@ -61,6 +60,7 @@ public class UnitTestParams extends NetworkParameters {
         return instance;
     }
 
+    @Override
     public String getPaymentProtocolId() {
         return null;
     }

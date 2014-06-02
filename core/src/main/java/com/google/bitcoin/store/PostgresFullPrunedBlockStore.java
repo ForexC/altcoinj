@@ -1,5 +1,6 @@
 /*
  * Copyright 2014 BitPOS Pty Ltd.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -215,6 +216,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public synchronized void close() {
         for (Connection conn : allConnections) {
             try {
@@ -445,6 +447,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void put(StoredBlock storedBlock) throws BlockStoreException {
         maybeConnect();
         try {
@@ -454,6 +457,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void put(StoredBlock storedBlock, StoredUndoableBlock undoableBlock) throws BlockStoreException {
         maybeConnect();
         // We skip the first 4 bytes because (on prodnet) the minimum target has 4 0-bytes
@@ -485,7 +489,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
 
         try {
             if (log.isDebugEnabled())
-                log.debug("Looking for undoable block with hash: " + Utils.bytesToHexString(hashBytes));
+                log.debug("Looking for undoable block with hash: " + Utils.HEX.encode(hashBytes));
 
             PreparedStatement findS = conn.get().prepareStatement("select 1 from undoableBlocks where hash = ?");
             findS.setBytes(1, hashBytes);
@@ -504,8 +508,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
                 s.setBytes(3, hashBytes);
 
                 if (log.isDebugEnabled())
-                    log.debug("Updating undoable block with hash: " + Utils.bytesToHexString(hashBytes));
-
+                    log.debug("Updating undoable block with hash: " + Utils.HEX.encode(hashBytes));
 
                 if (transactions == null) {
                     s.setBytes(1, txOutChanges);
@@ -527,8 +530,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
             s.setInt(2, height);
 
             if (log.isDebugEnabled())
-                log.debug("Inserting undoable block with hash: " + Utils.bytesToHexString(hashBytes)  + " at height " + height);
-
+                log.debug("Inserting undoable block with hash: " + Utils.HEX.encode(hashBytes)  + " at height " + height);
 
             if (transactions == null) {
                 s.setBytes(3, txOutChanges);
@@ -598,14 +600,17 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public StoredBlock get(Hash hash) throws BlockStoreException {
         return get(hash, false);
     }
 
+    @Override
     public StoredBlock getOnceUndoableStoredBlock(Hash hash) throws BlockStoreException {
         return get(hash, true);
     }
 
+    @Override
     public StoredUndoableBlock getUndoBlock(Hash hash) throws BlockStoreException {
         maybeConnect();
         PreparedStatement s = null;
@@ -666,10 +671,12 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public StoredBlock getChainHead() throws BlockStoreException {
         return chainHeadBlock;
     }
 
+    @Override
     public void setChainHead(StoredBlock chainHead) throws BlockStoreException {
         Hash hash = chainHead.getHeader().getHash();
         this.chainHeadHash = hash;
@@ -687,10 +694,12 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public StoredBlock getVerifiedChainHead() throws BlockStoreException {
         return verifiedChainHeadBlock;
     }
 
+    @Override
     public void setVerifiedChainHead(StoredBlock chainHead) throws BlockStoreException {
         Hash hash = chainHead.getHeader().getHash();
         this.verifiedChainHeadHash = hash;
@@ -728,6 +737,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public StoredTransactionOutput getTransactionOutput(Hash hash, long index) throws BlockStoreException {
         maybeConnect();
         PreparedStatement s = null;
@@ -744,7 +754,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
             }
             // Parse it.
             int height = results.getInt(1);
-            BigInteger value = new BigInteger(results.getBytes(2));
+            Coin value = Coin.valueOf(new BigInteger(results.getBytes(2)).longValue());
             // Tell the StoredTransactionOutput that we are a coinbase, as that is encoded in height
             StoredTransactionOutput txout = new StoredTransactionOutput(hash, index, value, height, true, results.getBytes(3));
             return txout;
@@ -758,6 +768,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void addUnspentTransactionOutput(StoredTransactionOutput out) throws BlockStoreException {
         maybeConnect();
         PreparedStatement s = null;
@@ -808,7 +819,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
             // index is actually an unsigned int
             s.setInt(2, (int)out.getIndex());
             s.setInt(3, out.getHeight());
-            s.setBytes(4, out.getValue().toByteArray());
+            s.setBytes(4, BigInteger.valueOf(out.getValue().value).toByteArray());
             s.setBytes(5, out.getScriptBytes());
             s.setString(6, dbAddress);
             s.setInt(7, type);
@@ -825,6 +836,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void removeUnspentTransactionOutput(StoredTransactionOutput out) throws BlockStoreException {
         maybeConnect();
         // TODO: This should only need one query (maybe a stored procedure)
@@ -843,6 +855,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void beginDatabaseBatchWrite() throws BlockStoreException {
 
         maybeConnect();
@@ -857,6 +870,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void commitDatabaseBatchWrite() throws BlockStoreException {
         maybeConnect();
 
@@ -872,6 +886,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public void abortDatabaseBatchWrite() throws BlockStoreException {
 
         maybeConnect();
@@ -890,6 +905,7 @@ public class PostgresFullPrunedBlockStore implements FullPrunedBlockStore {
         }
     }
 
+    @Override
     public boolean hasUnspentOutputs(Hash hash, int numOutputs) throws BlockStoreException {
         maybeConnect();
         PreparedStatement s = null;

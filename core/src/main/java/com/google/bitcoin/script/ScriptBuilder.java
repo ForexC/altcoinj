@@ -41,17 +41,30 @@ public class ScriptBuilder {
         chunks = Lists.newLinkedList();
     }
 
-    public ScriptBuilder op(int opcode) {
-        checkArgument(opcode > OP_PUSHDATA4);
-        chunks.add(new ScriptChunk(opcode, null));
+    public ScriptBuilder addChunk(ScriptChunk chunk) {
+        chunks.add(chunk);
         return this;
     }
 
+    public ScriptBuilder op(int opcode) {
+        checkArgument(opcode > OP_PUSHDATA4);
+        return addChunk(new ScriptChunk(opcode, null));
+    }
+
     public ScriptBuilder data(byte[] data) {
+        // implements BIP62
         byte[] copy = Arrays.copyOf(data, data.length);
         int opcode;
-        if (data.length < OP_PUSHDATA1) {
-            opcode = data.length; // OP_0 in case of empty vector
+        if (data.length == 0) {
+            opcode = OP_0;
+        } else if (data.length == 1) {
+            byte b = data[0];
+            if (b >= 1 && b <= 16)
+                opcode = Script.encodeToOpN(b);
+            else
+                opcode = 1;
+        } else if (data.length < OP_PUSHDATA1) {
+            opcode = data.length;
         } else if (data.length < 256) {
             opcode = OP_PUSHDATA1;
         } else if (data.length < 65536) {
@@ -59,15 +72,13 @@ public class ScriptBuilder {
         } else {
             throw new RuntimeException("Unimplemented");
         }
-        chunks.add(new ScriptChunk(opcode, copy));
-        return this;
+        return addChunk(new ScriptChunk(opcode, copy));
     }
 
     public ScriptBuilder smallNum(int num) {
         checkArgument(num >= 0, "Cannot encode negative numbers with smallNum");
         checkArgument(num <= 16, "Cannot encode numbers larger than 16 with smallNum");
-        chunks.add(new ScriptChunk(Script.encodeToOpN(num), null));
-        return this;
+        return addChunk(new ScriptChunk(Script.encodeToOpN(num), null));
     }
 
     public Script build() {

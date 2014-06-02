@@ -25,9 +25,15 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
+import static com.google.bitcoin.script.ScriptOpCodes.OP_0;
+import static com.google.bitcoin.script.ScriptOpCodes.OP_1;
+import static com.google.bitcoin.script.ScriptOpCodes.OP_16;
+import static com.google.bitcoin.script.ScriptOpCodes.OP_1NEGATE;
 import static com.google.bitcoin.script.ScriptOpCodes.OP_PUSHDATA1;
 import static com.google.bitcoin.script.ScriptOpCodes.OP_PUSHDATA2;
 import static com.google.bitcoin.script.ScriptOpCodes.OP_PUSHDATA4;
+import static com.google.bitcoin.script.ScriptOpCodes.getOpCodeName;
+import static com.google.bitcoin.script.ScriptOpCodes.getPushDataName;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -61,9 +67,41 @@ public class ScriptChunk {
         return opcode > OP_PUSHDATA4;
     }
 
+    /**
+     * Returns true if this chunk is pushdata content, including the single-byte pushdatas.
+     */
+    public boolean isPushData() {
+        return opcode <= OP_16;
+    }
+
     public int getStartLocationInProgram() {
         checkState(startLocationInProgram >= 0);
         return startLocationInProgram;
+    }
+
+    /**
+     * Called on a pushdata chunk, returns true if it uses the smallest possible way (according to BIP62) to push the data.
+     */
+    public boolean isShortestPossiblePushData() {
+        checkState(isPushData());
+        if (data.length == 0)
+            return opcode == OP_0;
+        if (data.length == 1) {
+            byte b = data[0];
+            if (b >= 0x01 && b <= 0x10)
+                return opcode == OP_1 + b - 1;
+            if (b == 0x81)
+                return opcode == OP_1NEGATE;
+        }
+        if (data.length < OP_PUSHDATA1)
+            return opcode == data.length;
+        if (data.length < 256)
+            return opcode == OP_PUSHDATA1;
+        if (data.length < 65536)
+            return opcode == OP_PUSHDATA2;
+
+        // can never be used, but implemented for completeness
+        return opcode == OP_PUSHDATA4;
     }
 
     public void write(OutputStream stream) throws IOException {
@@ -95,6 +133,24 @@ public class ScriptChunk {
         } else {
             stream.write(opcode); // smallNum
         }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder buf = new StringBuilder();
+        if (isOpCode()) {
+            buf.append(getOpCodeName(opcode));
+        } else if (data != null) {
+            // Data chunk
+            buf.append(getPushDataName(opcode));
+            buf.append("[");
+            buf.append(Utils.HEX.encode(data));
+            buf.append("]");
+        } else {
+            // Small num
+            buf.append(Script.decodeFromOpN(opcode));
+        }
+        return buf.toString();
     }
 
     @Override

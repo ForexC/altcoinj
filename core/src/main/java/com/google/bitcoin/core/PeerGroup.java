@@ -45,7 +45,6 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -140,10 +139,11 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
         @Override
         public void onBlocksDownloaded(Peer peer, Block block, int blocksLeft) {
             if(params.getBloomFiltersEnabled()) {
-                double rate = checkNotNull(chain).getFalsePositiveRate();
-                if (rate > bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE) {
-                    log.info("Force update Bloom filter due to high false positive rate");
-                    recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND);
+                final double rate = checkNotNull(chain).getFalsePositiveRate();
+                final double target = bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE;
+                if (rate > target) {
+                    log.info("Force update Bloom filter due to high false positive rate ({} vs {})", rate, target);
+                    recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
                 }
             }
         }
@@ -175,12 +175,12 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
             queueRecalc(true);
         }
 
-        @Override public void onKeysAdded(Wallet wallet, List<ECKey> keys) {
+        @Override public void onKeysAdded(List<ECKey> keys) {
             queueRecalc(true);
         }
 
         @Override
-        public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+        public void onCoinsReceived(Wallet wallet, Transaction tx, Coin prevBalance, Coin newBalance) {
             // We received a relevant transaction. We MAY need to recalculate and resend the Bloom filter, but only
             // if we have received a transaction that includes a relevant pay-to-pubkey output.
             //
@@ -776,6 +776,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
     protected void triggerShutdown() {
         // Force the thread to wake up.
         Uninterruptibles.putUninterruptibly(jobQueue, new Runnable() {
+            @Override
             public void run() {
             }
         });
@@ -848,7 +849,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
 
     public static enum FilterRecalculateMode {
         SEND_IF_CHANGED,
-        FORCE_SEND,
+        FORCE_SEND_FOR_REFRESH,
         DONT_SEND,
     }
 
@@ -873,13 +874,16 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
                 switch (mode) {
                     case SEND_IF_CHANGED: send = result.changed; break;
                     case DONT_SEND: send = false; break;
-                    case FORCE_SEND: send = true; break;
+                    case FORCE_SEND_FOR_REFRESH: send = true; break;
                     default: throw new UnsupportedOperationException();
                 }
-
                 if (send) {
-                    for (Peer peer : peers)
-                        peer.setBloomFilter(result.filter);
+                    for (Peer peer : peers) {
+                        // Only query the mempool if this recalculation request is not in order to lower the observed FP
+                        // rate. There's no point querying the mempool when doing this because the FP rate can only go
+                        // down, and we will have seen all the relevant txns before: it's pointless to ask for them again.
+                        peer.setBloomFilter(result.filter, mode != FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+                    }
                     // Reset the false positive estimate so that we don't send a flood of filter updates
                     // if the estimate temporarily overshoots our threshold.
                     if (chain != null)
@@ -1098,6 +1102,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
         final Runnable[] pingRunnable = new Runnable[1];
         pingRunnable[0] = new Runnable() {
             private boolean firstRun = true;
+            @Override
             public void run() {
                 // Ensure that the first ping happens immediately and later pings after the requested delay.
                 if (firstRun) {
@@ -1377,6 +1382,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
      * Calls {@link PeerGroup#broadcastTransaction(Transaction,int)} with getMinBroadcastConnections() as the number
      * of connections to wait for before commencing broadcast.
      */
+    @Override
     public ListenableFuture<Transaction> broadcastTransaction(final Transaction tx) {
         return broadcastTransaction(tx, Math.max(1, getMinBroadcastConnections()));
     }
@@ -1555,6 +1561,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
         }
         // Sort by ping time.
         Collections.sort(candidates2, new Comparator<PeerAndPing>() {
+            @Override
             public int compare(PeerAndPing peerAndPing, PeerAndPing peerAndPing2) {
                 return Longs.compare(peerAndPing.pingTime, peerAndPing2.pingTime);
             }

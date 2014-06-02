@@ -1,5 +1,6 @@
 /**
  * Copyright 2011 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,28 +55,32 @@ public class TransactionInput extends ChildMessage implements Serializable {
     // The Script object obtained from parsing scriptBytes. Only filled in on demand and if the transaction is not
     // coinbase.
     transient private WeakReference<Script> scriptSig;
+    /** Value of the output connected to the input, if known. This field does not participate in equals()/hashCode(). */
+    @Nullable
+    private final Coin value;
     // A pointer to the transaction that owns this input.
-    private Transaction parentTransaction;
+    private final Transaction parentTransaction;
 
     /**
      * Creates an input that connects to nothing - used only in creation of coinbase transactions.
      */
     public TransactionInput(NetworkParameters params, Transaction parentTransaction, byte[] scriptBytes) {
-        super(params);
-        this.scriptBytes = scriptBytes;
-        this.outpoint = new TransactionOutPoint(params, NO_SEQUENCE, (Transaction)null);
-        this.sequence = NO_SEQUENCE;
-        this.parentTransaction = parentTransaction;
-        length = 40 + (scriptBytes == null ? 1 : VarInt.sizeOf(scriptBytes.length) + scriptBytes.length);
+        this(params, parentTransaction, scriptBytes, new TransactionOutPoint(params, NO_SEQUENCE, (Transaction) null));
     }
 
     public TransactionInput(NetworkParameters params, @Nullable Transaction parentTransaction, byte[] scriptBytes,
                             TransactionOutPoint outpoint) {
+        this(params, parentTransaction, scriptBytes, outpoint, null);
+    }
+
+    public TransactionInput(NetworkParameters params, @Nullable Transaction parentTransaction, byte[] scriptBytes,
+            TransactionOutPoint outpoint, @Nullable Coin value) {
         super(params);
         this.scriptBytes = scriptBytes;
         this.outpoint = outpoint;
         this.sequence = NO_SEQUENCE;
         this.parentTransaction = parentTransaction;
+        this.value = value;
         length = 40 + (scriptBytes == null ? 1 : VarInt.sizeOf(scriptBytes.length) + scriptBytes.length);
     }
 
@@ -89,6 +94,7 @@ public class TransactionInput extends ChildMessage implements Serializable {
         scriptBytes = EMPTY_ARRAY;
         sequence = NO_SEQUENCE;
         this.parentTransaction = parentTransaction;
+        this.value = output.getValue();
         length = 41;
     }
 
@@ -99,13 +105,14 @@ public class TransactionInput extends ChildMessage implements Serializable {
                             byte[] payload, int offset) throws ProtocolException {
         super(params, payload, offset);
         this.parentTransaction = parentTransaction;
+        this.value = null;
     }
 
     /**
      * Deserializes an input message. This is usually part of a transaction message.
      * @param params NetworkParameters object.
-     * @param msg Bitcoin protocol formatted byte array containing message content.
-     * @param offset The location of the first msg byte within the array.
+     * @param payload Bitcoin protocol formatted byte array containing message content.
+     * @param offset The location of the first payload byte within the array.
      * @param parseLazy Whether to perform a full parse immediately or delay until a read is requested.
      * @param parseRetain Whether to retain the backing byte array for quick reserialization.  
      * If true and the backing byte array is invalidated due to modification of a field then 
@@ -113,13 +120,15 @@ public class TransactionInput extends ChildMessage implements Serializable {
      * as the length will be provided as part of the header.  If unknown then set to Message.UNKNOWN_LENGTH
      * @throws ProtocolException
      */
-    public TransactionInput(NetworkParameters params, Transaction parentTransaction, byte[] msg, int offset,
+    public TransactionInput(NetworkParameters params, Transaction parentTransaction, byte[] payload, int offset,
                             boolean parseLazy, boolean parseRetain)
             throws ProtocolException {
-        super(params, msg, offset, parentTransaction, parseLazy, parseRetain, UNKNOWN_LENGTH);
+        super(params, payload, offset, parentTransaction, parseLazy, parseRetain, UNKNOWN_LENGTH);
         this.parentTransaction = parentTransaction;
+        this.value = null;
     }
 
+    @Override
     protected void parseLite() throws ProtocolException {
         int curs = cursor;
         int scriptLen = (int) readVarInt(36);
@@ -127,8 +136,9 @@ public class TransactionInput extends ChildMessage implements Serializable {
         cursor = curs;
     }
 
+    @Override
     void parse() throws ProtocolException {
-        outpoint = new TransactionOutPoint(params, bytes, cursor, this, parseLazy, parseRetain);
+        outpoint = new TransactionOutPoint(params, payload, cursor, this, parseLazy, parseRetain);
         cursor += outpoint.getMessageSize();
         int scriptLen = (int) readVarInt();
         scriptBytes = readBytes(scriptLen);
@@ -255,8 +265,17 @@ public class TransactionInput extends ChildMessage implements Serializable {
     }
 
     /**
+     * @return Value of the output connected to this input, if known. Null if unknown.
+     */
+    @Nullable
+    public Coin getValue() {
+        return value;
+    }
+
+    /**
      * Returns a human readable debug string.
      */
+    @Override
     public String toString() {
         if (isCoinBase())
             return "TxIn: COINBASE";

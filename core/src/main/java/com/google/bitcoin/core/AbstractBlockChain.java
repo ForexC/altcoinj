@@ -499,8 +499,8 @@ public abstract class AbstractBlockChain {
         // (in the case of the listener being a wallet). Wallets need to know how deep each transaction is so
         // coinbases aren't used before maturity.
         boolean first = true;
-        Set<Transaction> falsePositives = Sets.newHashSet();
-        if (filteredTxn != null) falsePositives.addAll(filteredTxn.values());
+        Set<Hash> falsePositives = Sets.newHashSet();
+        if (filteredTxHashList != null) falsePositives.addAll(filteredTxHashList);
         for (final ListenerRegistration<BlockChainListener> registration : listeners) {
             if (registration.executor == Threading.SAME_THREAD) {
                 informListenerForNewTransactions(block, newBlockType, filteredTxHashList, filteredTxn,
@@ -515,7 +515,7 @@ public abstract class AbstractBlockChain {
                     public void run() {
                         try {
                             // We can't do false-positive handling when executing on another thread
-                            Set<Transaction> ignoredFalsePositives = Sets.newHashSet();
+                            Set<Hash> ignoredFalsePositives = Sets.newHashSet();
                             informListenerForNewTransactions(block, newBlockType, filteredTxHashList, filteredTxn,
                                     newStoredBlock, notFirst, registration.listener, ignoredFalsePositives);
                             if (newBlockType == NewBlockType.BEST_CHAIN)
@@ -540,7 +540,7 @@ public abstract class AbstractBlockChain {
                                                          @Nullable Map<Hash, Transaction> filteredTxn,
                                                          StoredBlock newStoredBlock, boolean first,
                                                          BlockChainListener listener,
-                                                         Set<Transaction> falsePositives) throws VerificationException {
+                                                         Set<Hash> falsePositives) throws VerificationException {
         if (block.transactions != null) {
             // If this is not the first wallet, ask for the transactions to be duplicated before being given
             // to the wallet when relevant. This ensures that if we have two connected wallets and a tx that
@@ -557,11 +557,14 @@ public abstract class AbstractBlockChain {
             int relativityOffset = 0;
             for (Hash hash : filteredTxHashList) {
                 Transaction tx = filteredTxn.get(hash);
-                if (tx != null)
+                if (tx != null) {
                     sendTransactionsToListener(newStoredBlock, newBlockType, listener, relativityOffset,
                             Arrays.asList(tx), !first, falsePositives);
-                else
-                    listener.notifyTransactionIsInBlock(hash, newStoredBlock, newBlockType, relativityOffset);
+                } else {
+                    if (listener.notifyTransactionIsInBlock(hash, newStoredBlock, newBlockType, relativityOffset)) {
+                        falsePositives.remove(hash);
+                    }
+                }
                 relativityOffset++;
             }
         }
@@ -727,11 +730,11 @@ public abstract class AbstractBlockChain {
                                                    int relativityOffset,
                                                    List<Transaction> transactions,
                                                    boolean clone,
-                                                   Set<Transaction> falsePositives) throws VerificationException {
+                                                   Set<Hash> falsePositives) throws VerificationException {
         for (Transaction tx : transactions) {
             try {
                 if (listener.isTransactionRelevant(tx)) {
-                    falsePositives.remove(tx);
+                    falsePositives.remove(tx.getHash());
                     if (clone)
                         tx = new Transaction(tx.params, tx.bitcoinSerialize());
                     listener.receiveFromBlock(tx, block, blockType, relativityOffset++);

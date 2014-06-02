@@ -33,12 +33,13 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.google.bitcoin.core.Coin.*;
 import static com.google.bitcoin.protocols.channels.PaymentChannelCloseException.CloseReason;
 import static com.google.bitcoin.testing.FakeTxBuilder.createFakeBlock;
 import static org.bitcoin.paymentchannel.Protos.TwoWayChannelMessage.MessageType;
@@ -60,16 +61,17 @@ public class ChannelConnectionTest extends TestWithWallet {
         }
     };
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
         Utils.setMockClock(); // Use mock clock
-        sendMoneyToWallet(Utils.COIN, AbstractBlockChain.NewBlockType.BEST_CHAIN);
-        sendMoneyToWallet(Utils.COIN, AbstractBlockChain.NewBlockType.BEST_CHAIN);
+        sendMoneyToWallet(COIN, AbstractBlockChain.NewBlockType.BEST_CHAIN);
+        sendMoneyToWallet(COIN, AbstractBlockChain.NewBlockType.BEST_CHAIN);
         wallet.addExtension(new StoredPaymentChannelClientStates(wallet, failBroadcaster));
         serverWallet = new Wallet(params);
         serverWallet.addExtension(new StoredPaymentChannelServerStates(serverWallet, failBroadcaster));
-        serverWallet.addKey(new ECKey());
+        serverWallet.freshReceiveKey();
         serverChain = new BlockChain(params, serverWallet, blockStore);
         // Use an atomic boolean to indicate failure because fail()/assert*() dont work in network threads
         fail = new AtomicBoolean(false);
@@ -115,8 +117,8 @@ public class ChannelConnectionTest extends TestWithWallet {
         // Test with network code and without any issues. We'll broadcast two txns: multisig contract and settle transaction.
         final SettableFuture<ListenableFuture<PaymentChannelServerState>> serverCloseFuture = SettableFuture.create();
         final SettableFuture<Hash> channelOpenFuture = SettableFuture.create();
-        final BlockingQueue<BigInteger> q = new LinkedBlockingQueue<BigInteger>();
-        final PaymentChannelServerListener server = new PaymentChannelServerListener(mockBroadcaster, serverWallet, 30, Utils.COIN,
+        final BlockingQueue<Coin> q = new LinkedBlockingQueue<Coin>();
+        final PaymentChannelServerListener server = new PaymentChannelServerListener(mockBroadcaster, serverWallet, 30, COIN,
                 new PaymentChannelServerListener.HandlerFactory() {
                     @Nullable
                     @Override
@@ -128,7 +130,7 @@ public class ChannelConnectionTest extends TestWithWallet {
                             }
 
                             @Override
-                            public void paymentIncrease(BigInteger by, BigInteger to) {
+                            public void paymentIncrease(Coin by, Coin to) {
                                 q.add(to);
                             }
 
@@ -142,7 +144,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         server.bindAndStart(4243);
 
         PaymentChannelClientConnection client = new PaymentChannelClientConnection(
-                new InetSocketAddress("localhost", 4243), 30, wallet, myKey, Utils.COIN, "");
+                new InetSocketAddress("localhost", 4243), 30, wallet, myKey, COIN, "");
 
         // Wait for the multi-sig tx to be transmitted.
         broadcastTxPause.release();
@@ -168,16 +170,16 @@ public class ChannelConnectionTest extends TestWithWallet {
         });
 
         Thread.sleep(1250); // No timeouts once the channel is open
-        BigInteger amount = client.state().getValueSpent();
+        Coin amount = client.state().getValueSpent();
         assertEquals(amount, q.take());
-        client.incrementPayment(Utils.CENT).get();
-        amount = amount.add(Utils.CENT);
+        client.incrementPayment(CENT).get();
+        amount = amount.add(CENT);
         assertEquals(amount, q.take());
-        client.incrementPayment(Utils.CENT).get();
-        amount = amount.add(Utils.CENT);
+        client.incrementPayment(CENT).get();
+        amount = amount.add(CENT);
         assertEquals(amount, q.take());
-        client.incrementPayment(Utils.CENT).get();
-        amount = amount.add(Utils.CENT);
+        client.incrementPayment(CENT).get();
+        amount = amount.add(CENT);
         assertEquals(amount, q.take());
         latch.await();
 
@@ -192,7 +194,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         broadcastTxPause.release();
         Transaction settleTx = broadcasts.take();
         assertEquals(PaymentChannelServerState.State.CLOSED, serverState.getState());
-        if (!serverState.getBestValueToMe().equals(amount) || !serverState.getFeePaid().equals(BigInteger.ZERO))
+        if (!serverState.getBestValueToMe().equals(amount) || !serverState.getFeePaid().equals(Coin.ZERO))
             fail();
         assertTrue(channels.mapChannels.isEmpty());
 
@@ -215,7 +217,7 @@ public class ChannelConnectionTest extends TestWithWallet {
     public void testServerErrorHandling() throws Exception {
         // Gives the server crap and checks proper error responses are sent.
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         PaymentChannelServer server = pair.server;
         server.connectionOpen();
         client.connectionOpen();
@@ -237,7 +239,7 @@ public class ChannelConnectionTest extends TestWithWallet {
 
         // Make sure the server closes the socket on CLOSE
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         server = pair.server;
         server.connectionOpen();
         client.connectionOpen();
@@ -251,7 +253,7 @@ public class ChannelConnectionTest extends TestWithWallet {
 
         // Make sure the server closes the socket on ERROR
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         server = pair.server;
         server.connectionOpen();
         client.connectionOpen();
@@ -275,13 +277,13 @@ public class ChannelConnectionTest extends TestWithWallet {
         // Open up a normal channel.
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         pair.server.connectionOpen();
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         PaymentChannelServer server = pair.server;
         client.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.SERVER_VERSION));
         final Protos.TwoWayChannelMessage initiateMsg = pair.serverRecorder.checkNextMsg(MessageType.INITIATE);
-        BigInteger minPayment = BigInteger.valueOf(initiateMsg.getInitiate().getMinPayment());
+        Coin minPayment = Coin.valueOf(initiateMsg.getInitiate().getMinPayment());
         client.receiveMessage(initiateMsg);
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.PROVIDE_REFUND));
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.RETURN_REFUND));
@@ -296,8 +298,8 @@ public class ChannelConnectionTest extends TestWithWallet {
         assertNull(pair.clientRecorder.q.poll());
         assertEquals(minPayment, client.state().getValueSpent());
         // Send a bitcent.
-        BigInteger amount = minPayment.add(Utils.CENT);
-        client.incrementPayment(Utils.CENT);
+        Coin amount = minPayment.add(CENT);
+        client.incrementPayment(CENT);
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
         assertEquals(amount, pair.serverRecorder.q.take());
         server.close();
@@ -333,7 +335,7 @@ public class ChannelConnectionTest extends TestWithWallet {
                 (StoredPaymentChannelClientStates) wallet.getExtensions().get(StoredPaymentChannelClientStates.EXTENSION_ID);
 
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         server = pair.server;
         client.connectionOpen();
         server.connectionOpen();
@@ -349,8 +351,8 @@ public class ChannelConnectionTest extends TestWithWallet {
         assertNull(pair.serverRecorder.q.poll());
         assertNull(pair.clientRecorder.q.poll());
         // Send another bitcent and check 2 were received in total.
-        client.incrementPayment(Utils.CENT);
-        amount = amount.add(Utils.CENT);
+        client.incrementPayment(CENT);
+        amount = amount.add(CENT);
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
         pair.serverRecorder.checkTotalPayment(amount);
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.PAYMENT_ACK));
@@ -360,7 +362,7 @@ public class ChannelConnectionTest extends TestWithWallet {
 
         // Now open up a new client with the same id and make sure the server disconnects the previous client.
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         server = pair.server;
         client.connectionOpen();
         server.connectionOpen();
@@ -372,7 +374,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         }
         // Make sure the server allows two simultaneous opens. It will close the first and allow resumption of the second.
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         server = pair.server;
         client.connectionOpen();
         server.connectionOpen();
@@ -416,19 +418,17 @@ public class ChannelConnectionTest extends TestWithWallet {
     private static Wallet roundTripClientWallet(Wallet wallet) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         new WalletProtobufSerializer().writeWallet(wallet, bos);
-        Wallet wallet2 = new Wallet(wallet.getParams());
-        wallet2.addExtension(new StoredPaymentChannelClientStates(wallet2, failBroadcaster));
-        new WalletProtobufSerializer().readWallet(WalletProtobufSerializer.parseToProto(new ByteArrayInputStream(bos.toByteArray())), wallet2);
-        return wallet2;
+        org.bitcoinj.wallet.Protos.Wallet proto = WalletProtobufSerializer.parseToProto(new ByteArrayInputStream(bos.toByteArray()));
+        StoredPaymentChannelClientStates state = new StoredPaymentChannelClientStates(null, failBroadcaster);
+        return new WalletProtobufSerializer().readWallet(wallet.getParams(), new WalletExtension[] { state }, proto);
     }
 
     private static Wallet roundTripServerWallet(Wallet wallet) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         new WalletProtobufSerializer().writeWallet(wallet, bos);
-        Wallet wallet2 = new Wallet(wallet.getParams());
-        wallet2.addExtension(new StoredPaymentChannelServerStates(wallet2, failBroadcaster));
-        new WalletProtobufSerializer().readWallet(WalletProtobufSerializer.parseToProto(new ByteArrayInputStream(bos.toByteArray())), wallet2);
-        return wallet2;
+        StoredPaymentChannelServerStates state = new StoredPaymentChannelServerStates(null, failBroadcaster);
+        org.bitcoinj.wallet.Protos.Wallet proto = WalletProtobufSerializer.parseToProto(new ByteArrayInputStream(bos.toByteArray()));
+        return new WalletProtobufSerializer().readWallet(wallet.getParams(), new WalletExtension[] { state }, proto);
     }
 
     @Test
@@ -454,7 +454,7 @@ public class ChannelConnectionTest extends TestWithWallet {
     public void testClientUnknownVersion() throws Exception {
         // Tests client rejects unknown version
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION);
         client.receiveMessage(Protos.TwoWayChannelMessage.newBuilder()
@@ -464,7 +464,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         assertEquals(CloseReason.NO_ACCEPTABLE_VERSION, pair.clientRecorder.q.take());
         // Double-check that we cant do anything that requires an open channel
         try {
-            client.incrementPayment(BigInteger.ONE);
+            client.incrementPayment(Coin.SATOSHI);
             fail();
         } catch (IllegalStateException e) { }
     }
@@ -474,7 +474,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         // Tests that clients reject too large time windows
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         PaymentChannelServer server = pair.server;
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         server.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
@@ -483,14 +483,14 @@ public class ChannelConnectionTest extends TestWithWallet {
                 .setInitiate(Protos.Initiate.newBuilder().setExpireTimeSecs(Utils.currentTimeSeconds() + 60 * 60 * 48)
                         .setMinAcceptedChannelSize(100)
                         .setMultisigKey(ByteString.copyFrom(new ECKey().getPubKey()))
-                        .setMinPayment(Transaction.MIN_NONDUST_OUTPUT.longValue()))
+                        .setMinPayment(Transaction.MIN_NONDUST_OUTPUT.value))
                 .setType(MessageType.INITIATE).build());
 
         pair.clientRecorder.checkNextMsg(MessageType.ERROR);
         assertEquals(CloseReason.TIME_WINDOW_TOO_LARGE, pair.clientRecorder.q.take());
         // Double-check that we cant do anything that requires an open channel
         try {
-            client.incrementPayment(BigInteger.ONE);
+            client.incrementPayment(Coin.SATOSHI);
             fail();
         } catch (IllegalStateException e) { }
     }
@@ -499,32 +499,32 @@ public class ChannelConnectionTest extends TestWithWallet {
     public void testValuesAreRespected() throws Exception {
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         PaymentChannelServer server = pair.server;
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         server.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.SERVER_VERSION));
         client.receiveMessage(Protos.TwoWayChannelMessage.newBuilder()
                 .setInitiate(Protos.Initiate.newBuilder().setExpireTimeSecs(Utils.currentTimeSeconds())
-                        .setMinAcceptedChannelSize(Utils.COIN.add(BigInteger.ONE).longValue())
+                        .setMinAcceptedChannelSize(COIN.add(SATOSHI).value)
                         .setMultisigKey(ByteString.copyFrom(new ECKey().getPubKey()))
-                        .setMinPayment(Transaction.MIN_NONDUST_OUTPUT.longValue()))
+                        .setMinPayment(Transaction.MIN_NONDUST_OUTPUT.value))
                 .setType(MessageType.INITIATE).build());
         pair.clientRecorder.checkNextMsg(MessageType.ERROR);
         assertEquals(CloseReason.SERVER_REQUESTED_TOO_MUCH_VALUE, pair.clientRecorder.q.take());
         // Double-check that we cant do anything that requires an open channel
         try {
-            client.incrementPayment(BigInteger.ONE);
+            client.incrementPayment(Coin.SATOSHI);
             fail();
         } catch (IllegalStateException e) { }
 
         // Now check that if the server has a lower min size than what we are willing to spend, we do actually open
         // a channel of that size.
-        sendMoneyToWallet(Utils.COIN.multiply(BigInteger.TEN), AbstractBlockChain.NewBlockType.BEST_CHAIN);
+        sendMoneyToWallet(COIN.multiply(10), AbstractBlockChain.NewBlockType.BEST_CHAIN);
 
         pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         server = pair.server;
-        final BigInteger myValue = Utils.COIN.multiply(BigInteger.TEN);
+        final Coin myValue = COIN.multiply(10);
         client = new PaymentChannelClient(wallet, myKey, myValue, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         server.connectionOpen();
@@ -532,9 +532,9 @@ public class ChannelConnectionTest extends TestWithWallet {
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.SERVER_VERSION));
         client.receiveMessage(Protos.TwoWayChannelMessage.newBuilder()
                 .setInitiate(Protos.Initiate.newBuilder().setExpireTimeSecs(Utils.currentTimeSeconds())
-                        .setMinAcceptedChannelSize(Utils.COIN.add(BigInteger.ONE).longValue())
+                        .setMinAcceptedChannelSize(COIN.add(SATOSHI).value)
                         .setMultisigKey(ByteString.copyFrom(new ECKey().getPubKey()))
-                        .setMinPayment(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.longValue()))
+                        .setMinPayment(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.value))
                 .setType(MessageType.INITIATE).build());
         final Protos.TwoWayChannelMessage provideRefund = pair.clientRecorder.checkNextMsg(MessageType.PROVIDE_REFUND);
         Transaction refund = new Transaction(params, provideRefund.getProvideRefund().getTx().toByteArray());
@@ -544,10 +544,10 @@ public class ChannelConnectionTest extends TestWithWallet {
     @Test
     public void testEmptyWallet() throws Exception {
         Wallet emptyWallet = new Wallet(params);
-        emptyWallet.addKey(new ECKey());
+        emptyWallet.freshReceiveKey();
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         PaymentChannelServer server = pair.server;
-        PaymentChannelClient client = new PaymentChannelClient(emptyWallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(emptyWallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         server.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
@@ -555,9 +555,9 @@ public class ChannelConnectionTest extends TestWithWallet {
         try {
             client.receiveMessage(Protos.TwoWayChannelMessage.newBuilder()
                     .setInitiate(Protos.Initiate.newBuilder().setExpireTimeSecs(Utils.currentTimeSeconds())
-                            .setMinAcceptedChannelSize(Utils.CENT.longValue())
+                            .setMinAcceptedChannelSize(CENT.value)
                             .setMultisigKey(ByteString.copyFrom(new ECKey().getPubKey()))
-                            .setMinPayment(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.longValue()))
+                            .setMinPayment(Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.value))
                     .setType(MessageType.INITIATE).build());
             fail();
         } catch (InsufficientMoneyException expected) {
@@ -566,10 +566,28 @@ public class ChannelConnectionTest extends TestWithWallet {
     }
 
     @Test
+    public void testClientRefusesNonCanonicalKey() throws Exception {
+        ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
+        PaymentChannelServer server = pair.server;
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        client.connectionOpen();
+        server.connectionOpen();
+        server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
+        client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.SERVER_VERSION));
+        Protos.TwoWayChannelMessage.Builder initiateMsg = Protos.TwoWayChannelMessage.newBuilder(pair.serverRecorder.checkNextMsg(MessageType.INITIATE));
+        ByteString brokenKey = initiateMsg.getInitiate().getMultisigKey();
+        brokenKey = ByteString.copyFrom(Arrays.copyOf(brokenKey.toByteArray(), brokenKey.size() + 1));
+        initiateMsg.getInitiateBuilder().setMultisigKey(brokenKey);
+        client.receiveMessage(initiateMsg.build());
+        pair.clientRecorder.checkNextMsg(MessageType.ERROR);
+        assertEquals(CloseReason.REMOTE_SENT_INVALID_MESSAGE, pair.clientRecorder.q.take());
+    }
+
+    @Test
     public void testClientResumeNothing() throws Exception {
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         PaymentChannelServer server = pair.server;
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
         client.connectionOpen();
         server.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
@@ -583,7 +601,7 @@ public class ChannelConnectionTest extends TestWithWallet {
     @Test
     public void testClientRandomMessage() throws Exception {
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, Hash.ZERO_HASH, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, Hash.ZERO_HASH, pair.clientRecorder);
 
         client.connectionOpen();
         pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION);
@@ -604,7 +622,7 @@ public class ChannelConnectionTest extends TestWithWallet {
         Hash someServerId = Hash.ZERO_HASH;
         ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
         pair.server.connectionOpen();
-        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         PaymentChannelServer server = pair.server;
         client.connectionOpen();
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
@@ -627,15 +645,15 @@ public class ChannelConnectionTest extends TestWithWallet {
         server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
         broadcasts.take();
         // The channel is now empty.
-        assertEquals(BigInteger.ZERO, client.state().getValueRefunded());
-        pair.serverRecorder.q.take();  // Take the BigInteger.
+        assertEquals(Coin.ZERO, client.state().getValueRefunded());
+        pair.serverRecorder.q.take();  // Take the Coin.
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.PAYMENT_ACK));
         client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.CLOSE));
         assertEquals(CloseReason.SERVER_REQUESTED_CLOSE, pair.clientRecorder.q.take());
         client.connectionClosed();
 
         // Now try opening a new channel with the same server ID and verify the client asks for a new channel.
-        client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+        client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
         client.connectionOpen();
         Protos.TwoWayChannelMessage msg = pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION);
         assertFalse(msg.getClientVersion().hasPreviousChannelContractHash());
@@ -650,7 +668,7 @@ public class ChannelConnectionTest extends TestWithWallet {
             Hash someServerId = Hash.ZERO_HASH;
             ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
             pair.server.connectionOpen();
-            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
             PaymentChannelServer server = pair.server;
             client.connectionOpen();
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));
@@ -667,17 +685,17 @@ public class ChannelConnectionTest extends TestWithWallet {
             pair.clientRecorder.checkInitiated();
             assertNull(pair.serverRecorder.q.poll());
             assertNull(pair.clientRecorder.q.poll());
-            ListenableFuture<BigInteger> future = client.incrementPayment(Utils.CENT);
+            ListenableFuture<Coin> future = client.incrementPayment(CENT);
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
             pair.serverRecorder.q.take();
             client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.PAYMENT_ACK));
             assertTrue(future.isDone());
-            client.incrementPayment(Utils.CENT);
+            client.incrementPayment(CENT);
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
             pair.serverRecorder.q.take();
             client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.PAYMENT_ACK));
 
-            client.incrementPayment(Utils.CENT);
+            client.incrementPayment(CENT);
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
             pair.serverRecorder.q.take();
             client.receiveMessage(pair.serverRecorder.checkNextMsg(MessageType.PAYMENT_ACK));
@@ -702,7 +720,7 @@ public class ChannelConnectionTest extends TestWithWallet {
             Hash someServerId = Hash.ZERO_HASH;
             ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
             pair.server.connectionOpen();
-            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
             PaymentChannelServer server = pair.server;
             client.connectionOpen();
             final Protos.TwoWayChannelMessage msg = pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION);
@@ -721,7 +739,7 @@ public class ChannelConnectionTest extends TestWithWallet {
             pair.clientRecorder.checkInitiated();
             assertNull(pair.serverRecorder.q.poll());
             assertNull(pair.clientRecorder.q.poll());
-            client.incrementPayment(Utils.CENT);
+            client.incrementPayment(CENT);
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.UPDATE_PAYMENT));
             client.connectionClosed();
             server.connectionClosed();
@@ -731,7 +749,7 @@ public class ChannelConnectionTest extends TestWithWallet {
             Hash someServerId = Hash.ZERO_HASH;
             ChannelTestUtils.RecordingPair pair = ChannelTestUtils.makeRecorders(serverWallet, mockBroadcaster);
             pair.server.connectionOpen();
-            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, Utils.COIN, someServerId, pair.clientRecorder);
+            PaymentChannelClient client = new PaymentChannelClient(wallet, myKey, COIN, someServerId, pair.clientRecorder);
             PaymentChannelServer server = pair.server;
             client.connectionOpen();
             server.receiveMessage(pair.clientRecorder.checkNextMsg(MessageType.CLIENT_VERSION));

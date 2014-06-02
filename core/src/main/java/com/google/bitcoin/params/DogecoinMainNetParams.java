@@ -20,7 +20,6 @@ import com.google.bitcoin.core.*;
 import com.google.bitcoin.pows.ScryptProofOfWork;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
-import org.spongycastle.util.encoders.Hex;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -28,14 +27,14 @@ import static com.google.common.base.Preconditions.checkState;
  * Parameters for the main production network on which people trade goods and services.
  */
 public class DogecoinMainNetParams extends NetworkParameters {
-    public static final byte[] GENESIS_INPUT = Hex.decode("04ffff001d0104084e696e746f6e646f");
-    public static final byte[] GENESIS_SCRIPTPUBKEY = Hex.decode("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");
+    public static final byte[] GENESIS_INPUT = Utils.HEX.decode("04ffff001d0104084e696e746f6e646f");
+    public static final byte[] GENESIS_SCRIPTPUBKEY = Utils.HEX.decode("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9");
 
     public static final int TARGET_SPACING = 60;
     public static final int TARGET_DIFF = 145000;
     public static final int TARGET_INTERVAL = 4 * 60;
 
-    public static final byte[] ALERT_KEY = Hex.decode("04d4da7a5dae4db797d9b0644d57a5cd50e05a70f36091cd62e2fc41c98ded06340be5a43a35e185690cd9cde5d72da8f6d065b499b06f51dcfba14aad859f443a");
+    public static final byte[] ALERT_KEY = Utils.HEX.decode("04d4da7a5dae4db797d9b0644d57a5cd50e05a70f36091cd62e2fc41c98ded06340be5a43a35e185690cd9cde5d72da8f6d065b499b06f51dcfba14aad859f443a");
 
     private static ScryptProofOfWork proofOfWorkInstance;
 
@@ -55,7 +54,7 @@ public class DogecoinMainNetParams extends NetworkParameters {
         genesisBlock.setDifficultyTarget(0x1e0ffff0L);
         genesisBlock.setTime(1386325540L);
         genesisBlock.setNonce(99943L);
-        genesisBlock.getTransactions().get(0).getOutput(0).setValue(Utils.toNanoCoins(88, 0));
+        genesisBlock.getTransactions().get(0).getOutput(0).setValue(Coin.valueOf(88, 0));
         id = "org.dogecoin.production";
         subsidyDecreaseBlockCount = 100000;
         spendableCoinbaseDepth = 100;

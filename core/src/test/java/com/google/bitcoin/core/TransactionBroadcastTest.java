@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
+import static com.google.bitcoin.core.Coin.*;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.junit.Assert.*;
 
@@ -107,13 +108,18 @@ public class TransactionBroadcastTest extends TestWithPeerGroup {
         Block b1 = FakeTxBuilder.makeSolvedTestBlock(blockStore, address);
         inbound(p1, b1);
         assertNull(outbound(p1));
-        assertEquals(Utils.toNanoCoins(50, 0), wallet.getBalance());
+        assertEquals(FIFTY_COINS, wallet.getBalance());
 
         // Now create a spend, and expect the announcement on p1.
         Address dest = new ECKey().toAddress(params);
-        Wallet.SendResult sendResult = wallet.sendCoins(peerGroup, dest, Utils.toNanoCoins(1, 0));
+        Wallet.SendResult sendResult = wallet.sendCoins(peerGroup, dest, COIN);
         assertFalse(sendResult.broadcastComplete.isDone());
-        Transaction t1 = (Transaction) outbound(p1);
+        Transaction t1;
+        {
+            Message m;
+            while (!((m = outbound(p1)) instanceof Transaction));
+            t1 = (Transaction) m;
+        }
         assertFalse(sendResult.broadcastComplete.isDone());
 
         // p1 eats it :( A bit later the PeerGroup is taken down.
@@ -142,7 +148,7 @@ public class TransactionBroadcastTest extends TestWithPeerGroup {
         inbound(p1, b1);
         pingAndWait(p1);
         assertNull(outbound(p1));
-        assertEquals(Utils.toNanoCoins(50, 0), wallet.getBalance());
+        assertEquals(FIFTY_COINS, wallet.getBalance());
 
         // Check that the wallet informs us of changes in confidence as the transaction ripples across the network.
         final Transaction[] transactions = new Transaction[1];
@@ -155,17 +161,25 @@ public class TransactionBroadcastTest extends TestWithPeerGroup {
 
         // Now create a spend, and expect the announcement on p1.
         Address dest = new ECKey().toAddress(params);
-        Wallet.SendResult sendResult = wallet.sendCoins(peerGroup, dest, Utils.toNanoCoins(1, 0));
+        Wallet.SendResult sendResult = wallet.sendCoins(peerGroup, dest, COIN);
         assertNotNull(sendResult.tx);
         Threading.waitForUserCode();
         assertFalse(sendResult.broadcastComplete.isDone());
         assertEquals(transactions[0], sendResult.tx);
         assertEquals(0, transactions[0].getConfidence().numBroadcastPeers());
         transactions[0] = null;
-        Transaction t1 = (Transaction) outbound(p1);
+        Transaction t1;
+        {
+            peerGroup.waitForJobQueue();
+            Message m = outbound(p1);
+            // Hack: bloom filters are recalculated asynchronously to sending transactions to avoid lock
+            // inversion, so we might or might not get the filter/mempool message first or second.
+            while (!(m instanceof Transaction)) m = outbound(p1);
+            t1 = (Transaction) m;
+        }
         assertNotNull(t1);
         // 49 BTC in change.
-        assertEquals(Utils.toNanoCoins(49, 0), t1.getValueSentToMe(wallet));
+        assertEquals(valueOf(49, 0), t1.getValueSentToMe(wallet));
         // The future won't complete until it's heard back from the network on p2.
         InventoryMessage inv = new InventoryMessage(params);
         inv.addTransaction(t1);
@@ -183,13 +197,13 @@ public class TransactionBroadcastTest extends TestWithPeerGroup {
 
         // Do the same thing with an offline transaction.
         peerGroup.removeWallet(wallet);
-        Wallet.SendRequest req = Wallet.SendRequest.to(dest, Utils.toNanoCoins(2, 0));
+        Wallet.SendRequest req = Wallet.SendRequest.to(dest, valueOf(2, 0));
         req.ensureMinRequiredFee = false;
         Transaction t3 = checkNotNull(wallet.sendCoinsOffline(req));
         assertNull(outbound(p1));  // Nothing sent.
         // Add the wallet to the peer group (simulate initialization). Transactions should be announced.
         peerGroup.addWallet(wallet);
-        // Transaction announced to the first peer.
+        // Transaction announced to the first peer. No extra Bloom filter because no change address was needed.
         assertEquals(t3.getHash(), ((Transaction) outbound(p1)).getHash());
     }
 }

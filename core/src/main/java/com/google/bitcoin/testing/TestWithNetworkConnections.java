@@ -29,7 +29,6 @@ import com.google.common.util.concurrent.SettableFuture;
 import javax.annotation.Nullable;
 import javax.net.SocketFactory;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -82,12 +81,11 @@ public class TestWithNetworkConnections {
         BriefLogFormatter.init();
 
         unitTestParams = UnitTestParams.get();
-        Wallet.SendRequest.DEFAULT_FEE_PER_KB = BigInteger.ZERO;
+        Wallet.SendRequest.DEFAULT_FEE_PER_KB = Coin.ZERO;
         this.blockStore = blockStore;
         wallet = new Wallet(unitTestParams);
-        key = new ECKey();
+        key = wallet.freshReceiveKey();
         address = key.toAddress(unitTestParams);
-        wallet.addKey(key);
         blockChain = new BlockChain(unitTestParams, wallet, blockStore);
 
         startPeerServers();

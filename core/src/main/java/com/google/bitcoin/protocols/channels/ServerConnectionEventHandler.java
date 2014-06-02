@@ -16,10 +16,10 @@
 
 package com.google.bitcoin.protocols.channels;
 
-import java.math.BigInteger;
-
+import com.google.bitcoin.core.Coin;
 import com.google.bitcoin.core.Hash;
 import com.google.bitcoin.net.ProtobufParser;
+
 import org.bitcoin.paymentchannel.Protos;
 
 import javax.annotation.Nullable;
@@ -29,10 +29,10 @@ import javax.annotation.Nullable;
  * {@link PaymentChannelServerListener}
 */
 public abstract class ServerConnectionEventHandler {
-    private ProtobufParser connectionChannel;
+    private ProtobufParser<Protos.TwoWayChannelMessage> connectionChannel;
     // Called by ServerListener before channelOpen to set connectionChannel when it is ready to received application messages
     // Also called with null to clear connectionChannel after channelClosed()
-    synchronized void setConnectionChannel(@Nullable ProtobufParser connectionChannel) { this.connectionChannel = connectionChannel; }
+    synchronized void setConnectionChannel(@Nullable ProtobufParser<Protos.TwoWayChannelMessage> connectionChannel) { this.connectionChannel = connectionChannel; }
 
     /**
      * <p>Closes the channel with the client (will generate a
@@ -70,7 +70,7 @@ public abstract class ServerConnectionEventHandler {
      * @param by The increase in total payment
      * @param to The new total payment to us (not including fees which may be required to claim the payment)
      */
-    public abstract void paymentIncrease(BigInteger by, BigInteger to);
+    public abstract void paymentIncrease(Coin by, Coin to);
 
     /**
      * <p>Called when the channel was closed for some reason. May be called without a call to

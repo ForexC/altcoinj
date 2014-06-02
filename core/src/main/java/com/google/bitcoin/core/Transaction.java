@@ -1,5 +1,6 @@
 /**
  * Copyright 2011 Google Inc.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +22,8 @@ import com.google.bitcoin.crypto.TransactionSignature;
 import com.google.bitcoin.script.Script;
 import com.google.bitcoin.script.ScriptBuilder;
 import com.google.bitcoin.script.ScriptOpCodes;
+import com.google.bitcoin.wallet.DecryptingKeyBag;
+import com.google.bitcoin.wallet.KeyBag;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
@@ -30,7 +33,6 @@ import org.spongycastle.crypto.params.KeyParameter;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -84,14 +86,14 @@ public class Transaction extends ChildMessage implements Serializable {
      * If fee is lower than this value (in satoshis), a default reference client will treat it as if there were no fee.
      * Currently this is 10000 satoshis.
      */
-    public static final BigInteger REFERENCE_DEFAULT_MIN_TX_FEE = BigInteger.valueOf(10000);
+    public static final Coin REFERENCE_DEFAULT_MIN_TX_FEE = Coin.valueOf(10000);
 
     /**
      * Any standard (ie pay-to-address) output smaller than this value (in satoshis) will most likely be rejected by the network.
      * This is calculated by assuming a standard output will be 34 bytes, and then using the formula used in
-     * {@link TransactionOutput#getMinNonDustValue(BigInteger)}. Currently it's 5460 satoshis.
+     * {@link TransactionOutput#getMinNonDustValue(Coin)}. Currently it's 5460 satoshis.
      */
-    public static final BigInteger MIN_NONDUST_OUTPUT = BigInteger.valueOf(5460);
+    public static final Coin MIN_NONDUST_OUTPUT = Coin.valueOf(5460);
 
     // These are serialized in both bitcoin and java serialization.
     private long version;
@@ -182,8 +184,8 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Creates a transaction by reading payload starting from offset bytes in. Length of a transaction is fixed.
      * @param params NetworkParameters object.
-     * @param msg Bitcoin protocol formatted byte array containing message content.
-     * @param offset The location of the first msg byte within the array.
+     * @param payload Bitcoin protocol formatted byte array containing message content.
+     * @param offset The location of the first payload byte within the array.
      * @param parseLazy Whether to perform a full parse immediately or delay until a read is requested.
      * @param parseRetain Whether to retain the backing byte array for quick reserialization.  
      * If true and the backing byte array is invalidated due to modification of a field then 
@@ -192,22 +194,23 @@ public class Transaction extends ChildMessage implements Serializable {
      * as the length will be provided as part of the header.  If unknown then set to Message.UNKNOWN_LENGTH
      * @throws ProtocolException
      */
-    public Transaction(NetworkParameters params, byte[] msg, int offset, @Nullable Message parent, boolean parseLazy, boolean parseRetain, int length)
+    public Transaction(NetworkParameters params, byte[] payload, int offset, @Nullable Message parent, boolean parseLazy, boolean parseRetain, int length)
             throws ProtocolException {
-        super(params, msg, offset, parent, parseLazy, parseRetain, length);
+        super(params, payload, offset, parent, parseLazy, parseRetain, length);
     }
 
     /**
      * Creates a transaction by reading payload starting from offset bytes in. Length of a transaction is fixed.
      */
-    public Transaction(NetworkParameters params, byte[] msg, @Nullable Message parent, boolean parseLazy, boolean parseRetain, int length)
+    public Transaction(NetworkParameters params, byte[] payload, @Nullable Message parent, boolean parseLazy, boolean parseRetain, int length)
             throws ProtocolException {
-        super(params, msg, 0, parent, parseLazy, parseRetain, length);
+        super(params, payload, 0, parent, parseLazy, parseRetain, length);
     }
 
     /**
      * Returns the transaction hash as you see them in the block explorer.
      */
+    @Override
     public Hash getHash() {
         if (hash == null) {
             byte[] bits = bitcoinSerialize();
@@ -234,10 +237,10 @@ public class Transaction extends ChildMessage implements Serializable {
      * Calculates the sum of the outputs that are sending coins to a key in the wallet. The flag controls whether to
      * include spent outputs or not.
      */
-    BigInteger getValueSentToMe(Wallet wallet, boolean includeSpent) {
+    Coin getValueSentToMe(Wallet wallet, boolean includeSpent) {
         maybeParse();
         // This is tested in WalletTest.
-        BigInteger v = BigInteger.ZERO;
+        Coin v = Coin.ZERO;
         for (TransactionOutput o : outputs) {
             if (!o.isMineOrWatched(wallet)) continue;
             if (!includeSpent && !o.isAvailableForSpending()) continue;
@@ -272,7 +275,7 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Calculates the sum of the outputs that are sending coins to a key in the wallet.
      */
-    public BigInteger getValueSentToMe(Wallet wallet) {
+    public Coin getValueSentToMe(Wallet wallet) {
         return getValueSentToMe(wallet, true);
     }
 
@@ -342,12 +345,12 @@ public class Transaction extends ChildMessage implements Serializable {
      * transactions sending coins to those keys to be in the wallet. This method will not attempt to download the
      * blocks containing the input transactions if the key is in the wallet but the transactions are not.
      *
-     * @return sum in nanocoins.
+     * @return sum of the inputs that are spending coins with keys in the wallet
      */
-    public BigInteger getValueSentFromMe(Wallet wallet) throws ScriptException {
+    public Coin getValueSentFromMe(Wallet wallet) throws ScriptException {
         maybeParse();
         // This is tested in WalletTest.
-        BigInteger v = BigInteger.ZERO;
+        Coin v = Coin.ZERO;
         for (TransactionInput input : inputs) {
             // This input is taking value from a transaction in our wallet. To discover the value,
             // we must find the connected transaction.
@@ -370,8 +373,27 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Returns the difference of {@link Transaction#getValueSentFromMe(Wallet)} and {@link Transaction#getValueSentToMe(Wallet)}.
      */
-    public BigInteger getValue(Wallet wallet) throws ScriptException {
+    public Coin getValue(Wallet wallet) throws ScriptException {
         return getValueSentToMe(wallet).subtract(getValueSentFromMe(wallet));
+    }
+
+    /**
+     * The transaction fee is the difference of the value of all inputs and the value of all outputs. Currently, the fee
+     * can only be determined for transactions created by us.
+     * 
+     * @return fee, or null if it cannot be determined
+     */
+    public Coin getFee() {
+        Coin fee = Coin.ZERO;
+        for (TransactionInput input : inputs) {
+            if (input.getValue() == null)
+                return null;
+            fee = fee.add(input.getValue());
+        }
+        for (TransactionOutput output : outputs) {
+            fee = fee.subtract(output.getValue());
+        }
+        return fee;
     }
 
     boolean disconnectInputs() {
@@ -451,11 +473,13 @@ public class Transaction extends ChildMessage implements Serializable {
     }
     public static final byte SIGHASH_ANYONECANPAY_VALUE = (byte) 0x80;
 
+    @Override
     protected void unCache() {
         super.unCache();
         hash = null;
     }
 
+    @Override
     protected void parseLite() throws ProtocolException {
 
         //skip this if the length has been provided i.e. the tx is not part of a block
@@ -473,7 +497,7 @@ public class Transaction extends ChildMessage implements Serializable {
 
             //parse();
             //parsed = true;
-            length = calcLength(bytes, offset);
+            length = calcLength(payload, offset);
             cursor = offset + length;
         }
     }
@@ -514,6 +538,7 @@ public class Transaction extends ChildMessage implements Serializable {
         return cursor - offset + 4;
     }
 
+    @Override
     void parse() throws ProtocolException {
 
         if (parsed)
@@ -529,7 +554,7 @@ public class Transaction extends ChildMessage implements Serializable {
         optimalEncodingMessageSize += VarInt.sizeOf(numInputs);
         inputs = new ArrayList<TransactionInput>((int) numInputs);
         for (long i = 0; i < numInputs; i++) {
-            TransactionInput input = new TransactionInput(params, this, bytes, cursor, parseLazy, parseRetain);
+            TransactionInput input = new TransactionInput(params, this, payload, cursor, parseLazy, parseRetain);
             inputs.add(input);
             long scriptLen = readVarInt(TransactionOutPoint.MESSAGE_LENGTH);
             optimalEncodingMessageSize += TransactionOutPoint.MESSAGE_LENGTH + VarInt.sizeOf(scriptLen) + scriptLen + 4;
@@ -540,7 +565,7 @@ public class Transaction extends ChildMessage implements Serializable {
         optimalEncodingMessageSize += VarInt.sizeOf(numOutputs);
         outputs = new ArrayList<TransactionOutput>((int) numOutputs);
         for (long i = 0; i < numOutputs; i++) {
-            TransactionOutput output = new TransactionOutput(params, this, bytes, cursor, parseLazy, parseRetain);
+            TransactionOutput output = new TransactionOutput(params, this, payload, cursor, parseLazy, parseRetain);
             outputs.add(output);
             long scriptLen = readVarInt(8);
             optimalEncodingMessageSize += 8 + VarInt.sizeOf(scriptLen) + scriptLen;
@@ -585,6 +610,7 @@ public class Transaction extends ChildMessage implements Serializable {
         return getConfidence().getDepthInBlocks() >= params.getSpendableCoinbaseDepth();
     }
 
+    @Override
     public String toString() {
         return toString(null);
     }
@@ -634,6 +660,8 @@ public class Transaction extends ChildMessage implements Serializable {
             try {
                 Script scriptSig = in.getScriptSig();
                 s.append(scriptSig);
+                if (in.getValue() != null)
+                    s.append(" ").append(in.getValue().toFriendlyString()).append(" BTC");
                 s.append("\n          ");
                 s.append("outpoint:");
                 final TransactionOutPoint outpoint = in.getOutpoint();
@@ -641,7 +669,7 @@ public class Transaction extends ChildMessage implements Serializable {
                 final TransactionOutput connectedOutput = outpoint.getConnectedOutput();
                 if (connectedOutput != null) {
                     s.append(" hash160:");
-                    s.append(Utils.bytesToHexString(connectedOutput.getScriptPubKey().getPubKeyHash()));
+                    s.append(Utils.HEX.encode(connectedOutput.getScriptPubKey().getPubKeyHash()));
                 }
             } catch (Exception e) {
                 s.append("[exception: ").append(e.getMessage()).append("]");
@@ -655,7 +683,7 @@ public class Transaction extends ChildMessage implements Serializable {
                 Script scriptPubKey = out.getScriptPubKey();
                 s.append(scriptPubKey);
                 s.append(" ");
-                s.append(bitcoinValueToFriendlyString(out.getValue()));
+                s.append(out.getValue().toFriendlyString());
                 s.append(" BTC");
                 if (!out.isAvailableForSpending()) {
                     s.append(" Spent");
@@ -783,7 +811,7 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Creates an output based on the given address and value, adds it to this transaction, and returns the new output.
      */
-    public TransactionOutput addOutput(BigInteger value, Address address) {
+    public TransactionOutput addOutput(Coin value, Address address) {
         return addOutput(new TransactionOutput(params, this, value, address));
     }
 
@@ -791,7 +819,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * Creates an output that pays to the given pubkey directly (no address) with the given value, adds it to this
      * transaction, and returns the new output.
      */
-    public TransactionOutput addOutput(BigInteger value, ECKey pubkey) {
+    public TransactionOutput addOutput(Coin value, ECKey pubkey) {
         return addOutput(new TransactionOutput(params, this, value, pubkey));
     }
 
@@ -799,7 +827,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * Creates an output that pays to the given script. The address and key forms are specialisations of this method,
      * you won't normally need to use it unless you're doing unusual things.
      */
-    public TransactionOutput addOutput(BigInteger value, Script script) {
+    public TransactionOutput addOutput(Coin value, Script script) {
         return addOutput(new TransactionOutput(params, this, value, script.getProgram()));
     }
 
@@ -826,7 +854,22 @@ public class Transaction extends ChildMessage implements Serializable {
      * @param wallet  A wallet is required to fetch the keys needed for signing.
      * @param aesKey The AES key to use to decrypt the key before signing. Null if no decryption is required.
      */
-    public synchronized void signInputs(SigHash hashType, Wallet wallet, @Nullable KeyParameter aesKey) throws ScriptException {
+    public void signInputs(SigHash hashType, Wallet wallet, @Nullable KeyParameter aesKey) throws ScriptException {
+        if (aesKey == null) {
+            signInputs(hashType, false, wallet);
+        } else {
+            signInputs(hashType, false, new DecryptingKeyBag(wallet, aesKey));
+        }
+    }
+
+    /**
+     * Signs as many inputs as possible using keys from the given key bag, which are expected to be usable for
+     * signing, i.e. not encrypted and not missing the private key part.
+     *
+     * @param hashType This should always be set to SigHash.ALL currently. Other types are unused.
+     * @param keyBag a provider of keys that are usable as-is for signing.
+     */
+    public synchronized void signInputs(SigHash hashType, boolean anyoneCanPay, KeyBag keyBag) throws ScriptException {
         checkState(inputs.size() > 0);
         checkState(outputs.size() > 0);
 
@@ -862,21 +905,23 @@ public class Transaction extends ChildMessage implements Serializable {
             if (input.getScriptBytes().length != 0)
                 log.warn("Re-signing an already signed transaction! Be sure this is what you want.");
             // Find the signing key we'll need to use.
-            ECKey key = input.getOutpoint().getConnectedKey(wallet);
+            ECKey key = input.getOutpoint().getConnectedKey(keyBag);
             // This assert should never fire. If it does, it means the wallet is inconsistent.
             checkNotNull(key, "Transaction exists in wallet that we cannot redeem: %s", input.getOutpoint().getHash());
             // Keep the key around for the script creation step below.
             signingKeys[i] = key;
             // The anyoneCanPay feature isn't used at the moment.
-            boolean anyoneCanPay = false;
             byte[] connectedPubKeyScript = input.getOutpoint().getConnectedPubKeyScript();
-            if (key.hasPrivKey() || key.isEncrypted()) {
-                signatures[i] = calculateSignature(i, key, aesKey, connectedPubKeyScript, hashType, anyoneCanPay);
-            } else {
+            try {
+                signatures[i] = calculateSignature(i, key, connectedPubKeyScript, hashType, anyoneCanPay);
+            } catch (ECKey.KeyIsEncryptedException e) {
+                throw e;
+            } catch (ECKey.MissingPrivateKeyException e) {
                 // Create a dummy signature to ensure the transaction is of the correct size when we try to ensure
                 // the right fee-per-kb is attached. If the wallet doesn't have the privkey, the user is assumed to
                 // be doing something special and that they will replace the dummy signature with a real one later.
                 signatures[i] = TransactionSignature.dummy();
+                log.info("Used dummy signature for input {} due to failure during signing (most likely missing privkey)", i);
             }
         }
 
@@ -909,22 +954,21 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * Calculates a signature that is valid for being inserted into the input at the given position. This is simply
      * a wrapper around calling {@link Transaction#hashForSignature(int, byte[], com.google.bitcoin.core.Transaction.SigHash, boolean)}
-     * followed by {@link ECKey#sign(Hash, org.spongycastle.crypto.params.KeyParameter)} and then returning
-     * a new {@link TransactionSignature}.
+     * followed by {@link ECKey#sign(Hash)} and then returning a new {@link TransactionSignature}. The key
+     * must be usable for signing as-is: if the key is encrypted it must be decrypted first external to this method.d
      *
      * @param inputIndex Which input to calculate the signature for, as an index.
      * @param key The private key used to calculate the signature.
-     * @param aesKey If not null, this will be used to decrypt the key.
      * @param connectedPubKeyScript Byte-exact contents of the scriptPubKey that is being satisified.
      * @param hashType Signing mode, see the enum for documentation.
      * @param anyoneCanPay Signing mode, see the SigHash enum for documentation.
      * @return A newly calculated signature object that wraps the r, s and sighash components.
      */
-    public synchronized  TransactionSignature calculateSignature(int inputIndex, ECKey key, @Nullable KeyParameter aesKey,
-                                                                 byte[] connectedPubKeyScript,
-                                                                 SigHash hashType, boolean anyoneCanPay) {
+    public synchronized TransactionSignature calculateSignature(int inputIndex, ECKey key,
+                                                                byte[] connectedPubKeyScript,
+                                                                SigHash hashType, boolean anyoneCanPay) {
         Hash hash = hashForSignature(inputIndex, connectedPubKeyScript, hashType, anyoneCanPay);
-        return new TransactionSignature(key.sign(hash, aesKey), hashType, anyoneCanPay);
+        return new TransactionSignature(key.sign(hash), hashType, anyoneCanPay);
     }
 
     /**
@@ -1052,7 +1096,7 @@ public class Transaction extends ChildMessage implements Serializable {
                 // that position are "nulled out". Unintuitively, the value in a "null" transaction is set to -1.
                 this.outputs = new ArrayList<TransactionOutput>(this.outputs.subList(0, inputIndex + 1));
                 for (int i = 0; i < inputIndex; i++)
-                    this.outputs.set(i, new TransactionOutput(params, this, NEGATIVE_ONE, new byte[] {}));
+                    this.outputs.set(i, new TransactionOutput(params, this, Coin.NEGATIVE_ONE, new byte[] {}));
                 // The signature isn't broken by new versions of the transaction issued by other parties.
                 for (int i = 0; i < inputs.size(); i++)
                     if (i != inputIndex)
@@ -1223,12 +1267,13 @@ public class Transaction extends ChildMessage implements Serializable {
         if (this.getMessageSize() > Block.MAX_BLOCK_SIZE)
             throw new VerificationException("Transaction larger than MAX_BLOCK_SIZE");
 
-        BigInteger valueOut = BigInteger.ZERO;
+        Coin valueOut = Coin.ZERO;
         for (TransactionOutput output : outputs) {
             if (output.getValue().signum() < 0)
                 throw new VerificationException("Transaction output negative");
             valueOut = valueOut.add(output.getValue());
         }
+
         if (params.maxMoney != null && valueOut.compareTo(params.maxMoney) > 0)
             throw new VerificationException("Total transaction output value greater than possible");
 

@@ -1,5 +1,6 @@
 /**
  * Copyright 2013 Jim Burton.
+ * Copyright 2014 Andreas Schildbach
  *
  * Licensed under the MIT license (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,14 +63,14 @@ public class KeyCrypterScryptTest {
         KeyCrypterScrypt keyCrypter = new KeyCrypterScrypt(scryptParameters);
 
         // Encrypt.
-        EncryptedPrivateKey encryptedPrivateKey = keyCrypter.encrypt(TEST_BYTES1, keyCrypter.deriveKey(PASSWORD1));
+        EncryptedData encryptedPrivateKey = keyCrypter.encrypt(TEST_BYTES1, keyCrypter.deriveKey(PASSWORD1));
         assertNotNull(encryptedPrivateKey);
 
         // Decrypt.
         byte[] reborn = keyCrypter.decrypt(encryptedPrivateKey, keyCrypter.deriveKey(PASSWORD1));
-        log.debug("Original: " + Utils.bytesToHexString(TEST_BYTES1));
-        log.debug("Reborn  : " + Utils.bytesToHexString(reborn));
-        assertEquals(Utils.bytesToHexString(TEST_BYTES1), Utils.bytesToHexString(reborn));
+        log.debug("Original: " + Utils.HEX.encode(TEST_BYTES1));
+        log.debug("Reborn  : " + Utils.HEX.encode(reborn));
+        assertEquals(Utils.HEX.encode(TEST_BYTES1), Utils.HEX.encode(reborn));
     }
 
     /**
@@ -89,12 +90,12 @@ public class KeyCrypterScryptTest {
             String plainText = UUID.randomUUID().toString();
             CharSequence password = UUID.randomUUID().toString();
 
-            EncryptedPrivateKey encryptedPrivateKey = keyCrypter.encrypt(plainText.getBytes(), keyCrypter.deriveKey(password));
+            EncryptedData encryptedPrivateKey = keyCrypter.encrypt(plainText.getBytes(), keyCrypter.deriveKey(password));
 
             assertNotNull(encryptedPrivateKey);
 
             byte[] reconstructedPlainBytes = keyCrypter.decrypt(encryptedPrivateKey,keyCrypter.deriveKey(password));
-            assertEquals(Utils.bytesToHexString(plainText.getBytes()), Utils.bytesToHexString(reconstructedPlainBytes));
+            assertEquals(Utils.HEX.encode(plainText.getBytes()), Utils.HEX.encode(reconstructedPlainBytes));
             System.out.print('.');
         }
         System.out.println(" Done.");
@@ -110,7 +111,7 @@ public class KeyCrypterScryptTest {
             stringBuffer.append(i).append(" ").append("The quick brown fox");
         }
 
-        EncryptedPrivateKey encryptedPrivateKey = keyCrypter.encrypt(stringBuffer.toString().getBytes(), keyCrypter.deriveKey(PASSWORD2));
+        EncryptedData encryptedPrivateKey = keyCrypter.encrypt(stringBuffer.toString().getBytes(), keyCrypter.deriveKey(PASSWORD2));
         assertNotNull(encryptedPrivateKey);
 
         try {
@@ -127,15 +128,15 @@ public class KeyCrypterScryptTest {
         KeyCrypterScrypt keyCrypter = new KeyCrypterScrypt(scryptParameters);
 
         // Encrypt bytes.
-        EncryptedPrivateKey encryptedPrivateKey = keyCrypter.encrypt(TEST_BYTES1, keyCrypter.deriveKey(PASSWORD1));
+        EncryptedData encryptedPrivateKey = keyCrypter.encrypt(TEST_BYTES1, keyCrypter.deriveKey(PASSWORD1));
         assertNotNull(encryptedPrivateKey);
-        log.debug("\nEncrypterDecrypterTest: cipherBytes = \nlength = " + encryptedPrivateKey.getEncryptedBytes().length + "\n---------------\n" + Utils.bytesToHexString(encryptedPrivateKey.getEncryptedBytes()) + "\n---------------\n");
+        log.debug("\nEncrypterDecrypterTest: cipherBytes = \nlength = " + encryptedPrivateKey.encryptedBytes.length + "\n---------------\n" + Utils.HEX.encode(encryptedPrivateKey.encryptedBytes) + "\n---------------\n");
 
         byte[] rebornPlainBytes = keyCrypter.decrypt(encryptedPrivateKey, keyCrypter.deriveKey(PASSWORD1));
 
-        log.debug("Original: " + Utils.bytesToHexString(TEST_BYTES1));
-        log.debug("Reborn1 : " + Utils.bytesToHexString(rebornPlainBytes));
-        assertEquals(Utils.bytesToHexString(TEST_BYTES1), Utils.bytesToHexString(rebornPlainBytes));
+        log.debug("Original: " + Utils.HEX.encode(TEST_BYTES1));
+        log.debug("Reborn1 : " + Utils.HEX.encode(rebornPlainBytes));
+        assertEquals(Utils.HEX.encode(TEST_BYTES1), Utils.HEX.encode(rebornPlainBytes));
     }
 
     @Test
@@ -149,15 +150,15 @@ public class KeyCrypterScryptTest {
             byte[] plainBytes = new byte[i];
             random.nextBytes(plainBytes);
 
-            EncryptedPrivateKey encryptedPrivateKey = keyCrypter.encrypt(plainBytes, keyCrypter.deriveKey(PASSWORD1));
+            EncryptedData encryptedPrivateKey = keyCrypter.encrypt(plainBytes, keyCrypter.deriveKey(PASSWORD1));
             assertNotNull(encryptedPrivateKey);
-            //log.debug("\nEncrypterDecrypterTest: cipherBytes = \nlength = " + cipherBytes.length + "\n---------------\n" + Utils.bytesToHexString(cipherBytes) + "\n---------------\n");
+            //log.debug("\nEncrypterDecrypterTest: cipherBytes = \nlength = " + cipherBytes.length + "\n---------------\n" + Utils.HEX.encode(cipherBytes) + "\n---------------\n");
 
             byte[] rebornPlainBytes = keyCrypter.decrypt(encryptedPrivateKey, keyCrypter.deriveKey(PASSWORD1));
 
-            log.debug("Original: (" + i + ") " + Utils.bytesToHexString(plainBytes));
-            log.debug("Reborn1 : (" + i + ") " + Utils.bytesToHexString(rebornPlainBytes));
-            assertEquals(Utils.bytesToHexString(plainBytes), Utils.bytesToHexString(rebornPlainBytes));
+            log.debug("Original: (" + i + ") " + Utils.HEX.encode(plainBytes));
+            log.debug("Reborn1 : (" + i + ") " + Utils.HEX.encode(rebornPlainBytes));
+            assertEquals(Utils.HEX.encode(plainBytes), Utils.HEX.encode(rebornPlainBytes));
         }
     }
 }

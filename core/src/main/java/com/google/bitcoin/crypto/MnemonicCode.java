@@ -19,7 +19,6 @@ package com.google.bitcoin.crypto;
 
 import com.google.bitcoin.core.Hash;
 import com.google.common.base.Joiner;
-import org.spongycastle.util.encoders.Hex;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static com.google.bitcoin.core.Utils.HEX;
+
 /**
  * A MnemonicCode object may be used to convert between binary seed values and
  * lists of words per <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">the BIP 39
@@ -41,6 +42,9 @@ public class MnemonicCode {
     private ArrayList<String> wordList;
 
     public static String BIP39_ENGLISH_SHA256 = "ad90bf3beb7b0eb7e5acd74727dc0da96e0a280a258354e7293fb7e211ac03db";
+
+    /** UNIX time for when the BIP39 standard was finalised. This can be used as a default seed birthday. */
+    public static long BIP39_STANDARDISATION_TIME_SECS = 1381276800;
 
     private static final int PBKDF2_ROUNDS = 2048;
 
@@ -74,7 +78,7 @@ public class MnemonicCode {
         // If a wordListDigest is supplied check to make sure it matches.
         if (wordListDigest != null) {
             byte[] digest = md.digest();
-            String hexdigest = new String(Hex.encode(digest));
+            String hexdigest = new String(HEX.encode(digest));
             if (!hexdigest.equals(wordListDigest))
                 throw new IllegalArgumentException("wordlist digest mismatch");
         }

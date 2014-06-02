@@ -36,7 +36,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.google.bitcoin.script.ScriptOpCodes.*;
-import static com.google.bitcoin.core.Utils.bytesToHexString;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -105,24 +104,14 @@ public class Script {
     /**
      * Returns the program opcodes as a string, for example "[1234] DUP HASH160"
      */
+    @Override
     public String toString() {
         StringBuilder buf = new StringBuilder();
-        for (ScriptChunk chunk : chunks) {
-            if (chunk.isOpCode()) {
-                buf.append(getOpCodeName(chunk.opcode));
-                buf.append(" ");
-            } else if (chunk.data != null) {
-                // Data chunk
-                buf.append(getPushDataName(chunk.opcode));
-                buf.append("[");
-                buf.append(bytesToHexString(chunk.data));
-                buf.append("] ");
-            } else {
-                // Small num
-                buf.append(decodeFromOpN(chunk.opcode));
-            }
-        }
-        return buf.toString().trim();
+        for (ScriptChunk chunk : chunks)
+            buf.append(chunk).append(' ');
+        if (buf.length() > 0)
+            buf.setLength(buf.length() - 1);
+        return buf.toString();
     }
 
     /** Returns the serialized program as a newly created byte array. */
@@ -299,7 +288,7 @@ public class Script {
      */
     @Deprecated
     public Address getFromAddress(NetworkParameters params) throws ScriptException {
-        return new Address(params, Utils.sha256hash160(getPubKey()));
+        return new Address(params, Utils.Hash160(getPubKey()));
     }
 
     /**
@@ -1049,7 +1038,7 @@ public class Script {
                 case OP_HASH160:
                     if (stack.size() < 1)
                         throw new ScriptException("Attempted OP_HASH160 on an empty stack");
-                    stack.add(Utils.sha256hash160(stack.pollLast()));
+                    stack.add(Utils.Hash160(stack.pollLast()));
                     break;
                 case OP_HASH256:
                     if (stack.size() < 1)

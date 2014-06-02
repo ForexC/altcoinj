@@ -22,27 +22,25 @@ import com.google.bitcoin.store.BlockStoreException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 
-/**
- * Utility methods for building fake/invalid transactions, often useful for unit testing.
- */
+import static com.google.bitcoin.core.Coin.*;
+
 public class FakeTxBuilder {
     /**
      * Create a fake TX of sufficient realism to exercise the unit tests. Two outputs, one to us, one to somewhere
      * else to simulate change. There is one random input.
      */
-    public static Transaction createFakeTxWithChangeAddress(NetworkParameters params, BigInteger nanocoins, Address to, Address changeOutput) {
+    public static Transaction createFakeTxWithChangeAddress(NetworkParameters params, Coin value, Address to, Address changeOutput) {
         Transaction t = new Transaction(params);
-        TransactionOutput outputToMe = new TransactionOutput(params, t, nanocoins, to);
+        TransactionOutput outputToMe = new TransactionOutput(params, t, value, to);
         t.addOutput(outputToMe);
-        TransactionOutput change = new TransactionOutput(params, t, Utils.toNanoCoins(1, 11), changeOutput);
+        TransactionOutput change = new TransactionOutput(params, t, valueOf(1, 11), changeOutput);
         t.addOutput(change);
         // Make a previous tx simply to send us sufficient coins. This prev tx is not really valid but it doesn't
         // matter for our purposes.
         Transaction prevTx = new Transaction(params);
-        TransactionOutput prevOut = new TransactionOutput(params, prevTx, nanocoins, to);
+        TransactionOutput prevOut = new TransactionOutput(params, prevTx, value, to);
         prevTx.addOutput(prevOut);
         // Connect it.
         t.addInput(prevOut);
@@ -54,24 +52,24 @@ public class FakeTxBuilder {
      * Create a fake TX of sufficient realism to exercise the unit tests. Two outputs, one to us, one to somewhere
      * else to simulate change. There is one random input.
      */
-    public static Transaction createFakeTx(NetworkParameters params, BigInteger nanocoins, Address to) {
-        return createFakeTxWithChangeAddress(params, nanocoins, to, new ECKey().toAddress(params));
+    public static Transaction createFakeTx(NetworkParameters params, Coin value, Address to) {
+        return createFakeTxWithChangeAddress(params, value, to, new ECKey().toAddress(params));
     }
 
     /**
      * Create a fake TX of sufficient realism to exercise the unit tests. Two outputs, one to us, one to somewhere
      * else to simulate change. There is one random input.
      */
-    public static Transaction createFakeTx(NetworkParameters params, BigInteger nanocoins, ECKey to) {
+    public static Transaction createFakeTx(NetworkParameters params, Coin value, ECKey to) {
         Transaction t = new Transaction(params);
-        TransactionOutput outputToMe = new TransactionOutput(params, t, nanocoins, to);
+        TransactionOutput outputToMe = new TransactionOutput(params, t, value, to);
         t.addOutput(outputToMe);
-        TransactionOutput change = new TransactionOutput(params, t, Utils.toNanoCoins(1, 11), new ECKey());
+        TransactionOutput change = new TransactionOutput(params, t, valueOf(1, 11), new ECKey());
         t.addOutput(change);
         // Make a previous tx simply to send us sufficient coins. This prev tx is not really valid but it doesn't
         // matter for our purposes.
         Transaction prevTx = new Transaction(params);
-        TransactionOutput prevOut = new TransactionOutput(params, prevTx, nanocoins, to);
+        TransactionOutput prevOut = new TransactionOutput(params, prevTx, value, to);
         prevTx.addOutput(prevOut);
         // Connect it.
         t.addInput(prevOut);
@@ -82,24 +80,24 @@ public class FakeTxBuilder {
     /**
      * Transaction[0] is a feeder transaction, supplying BTC to Transaction[1]
      */
-    public static Transaction[] createFakeTx(NetworkParameters params, BigInteger nanocoins,
+    public static Transaction[] createFakeTx(NetworkParameters params, Coin value,
                                              Address to, Address from) {
         // Create fake TXes of sufficient realism to exercise the unit tests. This transaction send BTC from the
         // from address, to the to address with to one to somewhere else to simulate change.
         Transaction t = new Transaction(params);
-        TransactionOutput outputToMe = new TransactionOutput(params, t, nanocoins, to);
+        TransactionOutput outputToMe = new TransactionOutput(params, t, value, to);
         t.addOutput(outputToMe);
-        TransactionOutput change = new TransactionOutput(params, t, Utils.toNanoCoins(1, 11), new ECKey().toAddress(params));
+        TransactionOutput change = new TransactionOutput(params, t, valueOf(1, 11), new ECKey().toAddress(params));
         t.addOutput(change);
         // Make a feeder tx that sends to the from address specified. This feeder tx is not really valid but it doesn't
         // matter for our purposes.
         Transaction feederTx = new Transaction(params);
-        TransactionOutput feederOut = new TransactionOutput(params, feederTx, nanocoins, from);
+        TransactionOutput feederOut = new TransactionOutput(params, feederTx, value, from);
         feederTx.addOutput(feederOut);
 
         // make a previous tx that sends from the feeder to the from address
         Transaction prevTx = new Transaction(params);
-        TransactionOutput prevOut = new TransactionOutput(params, prevTx, nanocoins, to);
+        TransactionOutput prevOut = new TransactionOutput(params, prevTx, value, to);
         prevTx.addOutput(prevOut);
 
         // Connect up the txes
@@ -134,7 +132,7 @@ public class FakeTxBuilder {
      */
     public static DoubleSpends createFakeDoubleSpendTxns(NetworkParameters params, Address to) {
         DoubleSpends doubleSpends = new DoubleSpends();
-        BigInteger value = Utils.toNanoCoins(1, 0);
+        Coin value = COIN;
         Address someBadGuy = new ECKey().toAddress(params);
 
         doubleSpends.t1 = new Transaction(params);

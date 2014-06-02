@@ -23,7 +23,7 @@ import com.google.protobuf.ByteString;
 import net.jcip.annotations.GuardedBy;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -39,7 +39,7 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
     static final String EXTENSION_ID = StoredPaymentChannelServerStates.class.getName();
 
     @GuardedBy("lock") @VisibleForTesting final Map<Hash, StoredServerChannel> mapChannels = new HashMap<Hash, StoredServerChannel>();
-    private final Wallet wallet;
+    private Wallet wallet;
     private final TransactionBroadcaster broadcaster;
 
     private final Timer channelTimeoutHandler = new Timer(true);
@@ -59,8 +59,8 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
      * Creates a new PaymentChannelServerStateManager and associates it with the given {@link Wallet} and
      * {@link TransactionBroadcaster} which are used to complete and announce payment transactions.
      */
-    public StoredPaymentChannelServerStates(Wallet wallet, TransactionBroadcaster broadcaster) {
-        this.wallet = checkNotNull(wallet);
+    public StoredPaymentChannelServerStates(@Nullable Wallet wallet, TransactionBroadcaster broadcaster) {
+        this.wallet = wallet;
         this.broadcaster = checkNotNull(broadcaster);
     }
 
@@ -154,7 +154,7 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
                 checkState(channel.refundTransactionUnlockTimeSecs > 0);
                 checkNotNull(channel.myKey.getPrivKeyBytes());
                 ServerState.StoredServerPaymentChannel.Builder channelBuilder = ServerState.StoredServerPaymentChannel.newBuilder()
-                        .setBestValueToMe(channel.bestValueToMe.longValue())
+                        .setBestValueToMe(channel.bestValueToMe.value)
                         .setRefundTransactionUnlockTimeSecs(channel.refundTransactionUnlockTimeSecs)
                         .setContractTransaction(ByteString.copyFrom(channel.contract.bitcoinSerialize()))
                         .setClientOutput(ByteString.copyFrom(channel.clientOutput.bitcoinSerialize()))
@@ -173,7 +173,7 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
     public void deserializeWalletExtension(Wallet containingWallet, byte[] data) throws Exception {
         lock.lock();
         try {
-            checkArgument(containingWallet == wallet);
+            this.wallet = containingWallet;
             ServerState.StoredServerPaymentChannels states = ServerState.StoredServerPaymentChannels.parseFrom(data);
             NetworkParameters params = containingWallet.getParams();
             for (ServerState.StoredServerPaymentChannel storedState : states.getChannelsList()) {
@@ -181,8 +181,8 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
                         new Transaction(params, storedState.getContractTransaction().toByteArray()),
                         new TransactionOutput(params, null, storedState.getClientOutput().toByteArray(), 0),
                         storedState.getRefundTransactionUnlockTimeSecs(),
-                        new ECKey(storedState.getMyKey().toByteArray(), null),
-                        BigInteger.valueOf(storedState.getBestValueToMe()),
+                        ECKey.fromPrivate(storedState.getMyKey().toByteArray()),
+                        Coin.valueOf(storedState.getBestValueToMe()),
                         storedState.hasBestValueSignature() ? storedState.getBestValueSignature().toByteArray() : null);
                 putChannel(channel);
             }
