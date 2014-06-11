@@ -77,7 +77,7 @@ public class PaymentChannelClient implements IPaymentChannelClient {
     // Will either hold the StoredClientChannel of this channel or null after connectionOpen
     private StoredClientChannel storedChannel;
     // An arbitrary hash which identifies this channel (specified by the API user)
-    private final Hash serverId;
+    private final Sha256Hash serverId;
 
     // The wallet associated with this channel
     private final Wallet wallet;
@@ -121,7 +121,7 @@ public class PaymentChannelClient implements IPaymentChannelClient {
      * @param conn A callback listener which represents the connection to the server (forwards messages we generate to
      *             the server)
      */
-    public PaymentChannelClient(Wallet wallet, ECKey myKey, Coin maxValue, Hash serverId, ClientConnection conn) {
+    public PaymentChannelClient(Wallet wallet, ECKey myKey, Coin maxValue, Sha256Hash serverId, ClientConnection conn) {
         this.wallet = checkNotNull(wallet);
         this.myKey = checkNotNull(myKey);
         this.maxValue = checkNotNull(maxValue);

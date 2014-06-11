@@ -16,7 +16,7 @@
 
 package com.google.bitcoin.store;
 
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.StoredBlock;
 
 /**
@@ -41,7 +41,7 @@ public interface BlockStore {
      * Returns the StoredBlock given a hash. The returned values block.getHash() method will be equal to the
      * parameter. If no such block is found, returns null.
      */
-    StoredBlock get(Hash hash) throws BlockStoreException;
+    StoredBlock get(Sha256Hash hash) throws BlockStoreException;
 
     /**
      * Returns the {@link StoredBlock} that represents the top of the chain of greatest total work. Note that this

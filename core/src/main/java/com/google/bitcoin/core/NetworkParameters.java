@@ -97,7 +97,7 @@ public abstract class NetworkParameters implements Serializable {
     
     protected int[] acceptableAddressCodes;
     protected String[] dnsSeeds;
-    protected Map<Integer, Hash> checkpoints = new HashMap<Integer, Hash>();
+    protected Map<Integer, Sha256Hash> checkpoints = new HashMap<Integer, Sha256Hash>();
 
     /**
      * Verifies block difficulty.
@@ -195,7 +195,7 @@ public abstract class NetworkParameters implements Serializable {
         return createGenesis(n, input, scriptPubKey, null);
     }
 
-    protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey, Hash root) {
+    protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey, Sha256Hash root) {
         Block genesisBlock = new Block(n);
         Transaction t = new Transaction(n);
         try {
@@ -314,8 +314,8 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * Returns true if the block height is either not a checkpoint, or is a checkpoint and the hash matches.
      */
-    public boolean passesCheckpoint(int height, Hash hash) {
-        Hash checkpointHash = checkpoints.get(height);
+    public boolean passesCheckpoint(int height, Sha256Hash hash) {
+        Sha256Hash checkpointHash = checkpoints.get(height);
         return checkpointHash == null || checkpointHash.equals(hash);
     }
 
@@ -323,7 +323,7 @@ public abstract class NetworkParameters implements Serializable {
      * Returns true if the given height has a recorded checkpoint.
      */
     public boolean isCheckpoint(int height) {
-        Hash checkpointHash = checkpoints.get(height);
+        Sha256Hash checkpointHash = checkpoints.get(height);
         return checkpointHash != null;
     }
 

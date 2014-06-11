@@ -45,7 +45,7 @@ public class BitcoindComparisonTool {
     private static FullPrunedBlockStore store;
     private static FullPrunedBlockChain chain;
     private static PeerGroup peers;
-    private static Hash bitcoindChainHead;
+    private static Sha256Hash bitcoindChainHead;
     private static volatile Peer bitcoind;
     private static volatile InventoryMessage mostRecentInv = null;
 
@@ -79,7 +79,7 @@ public class BitcoindComparisonTool {
         // bitcoind MUST be on localhost or we will get banned as a DoSer
         peers.addAddress(new PeerAddress(InetAddress.getByName("localhost"), args.length > 2 ? Integer.parseInt(args[2]) : params.getPort()));
 
-        final Set<Hash> blocksRequested = Collections.synchronizedSet(new HashSet<Hash>());
+        final Set<Sha256Hash> blocksRequested = Collections.synchronizedSet(new HashSet<Sha256Hash>());
         final AtomicInteger unexpectedInvs = new AtomicInteger(0);
         peers.addEventListener(new AbstractPeerEventListener() {
             @Override
@@ -158,9 +158,9 @@ public class BitcoindComparisonTool {
         while (bitcoind == null)
             Thread.sleep(50);
         
-        ArrayList<Hash> locator = new ArrayList<Hash>(1);
+        ArrayList<Sha256Hash> locator = new ArrayList<Sha256Hash>(1);
         locator.add(params.getGenesisBlock().getHash());
-        Hash hashTo = new Hash("0000000000000000000000000000000000000000000000000000000000000000");
+        Sha256Hash hashTo = new Sha256Hash("0000000000000000000000000000000000000000000000000000000000000000");
                 
         int differingBlocks = 0;
         int invalidBlocks = 0;

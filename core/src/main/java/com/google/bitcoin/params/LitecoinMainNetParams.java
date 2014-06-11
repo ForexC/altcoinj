@@ -17,7 +17,7 @@
 package com.google.bitcoin.params;
 
 import com.google.bitcoin.core.Coin;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.NetworkParameters;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.pows.ScryptProofOfWork;
@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class LitecoinMainNetParams extends NetworkParameters {
     public static final byte[] GENESIS_INPUT = Utils.HEX.decode("04b217bb4e022309");
     public static final byte[] GENESIS_SCRIPTPUBKEY = Utils.HEX.decode("41044870341873accab7600d65e204bb4ae47c43d20c562ebfbf70cbcb188da98dec8b5ccf0526c8e4d954c6b47b898cc30adf1ff77c2e518ddc9785b87ccb90b8cdac");
-    public static final Hash GENESIS_ROOT = new Hash("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9");
+    public static final Sha256Hash GENESIS_ROOT = new Sha256Hash("97ddfbbae6be97fd6cdf3e7ca13232a3afff2353e29badfab7f73011edd4ced9");
 
     public static final int TARGET_TIMESPAN = (int)(3.5 * 24 * 60 * 60);
     public static final int TARGET_SPACING = (int)(2.5 * 60);

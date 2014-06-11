@@ -1,6 +1,6 @@
 package com.google.bitcoin.pows;
 
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.ProofOfWork;
 import com.google.bitcoin.core.Utils;
 import com.lambdaworks.crypto.SCrypt;
@@ -18,10 +18,10 @@ public class ScryptProofOfWork extends ProofOfWork {
         this.dkLen = dkLen;
     }
 
-    protected Hash hash(byte[] header) {
+    protected Sha256Hash hash(byte[] header) {
         try {
             byte[] h = Utils.reverseBytes(SCrypt.scrypt(header, header, N, r, p, dkLen));
-            return new Hash(h);
+            return new Sha256Hash(h);
         } catch(GeneralSecurityException ex) {
             return null;
         }

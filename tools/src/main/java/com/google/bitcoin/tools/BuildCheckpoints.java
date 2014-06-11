@@ -98,8 +98,8 @@ public class BuildCheckpoints {
             buffer.position(0);
         }
         dataOutputStream.close();
-        Hash checkpointsHash = new Hash(digest.digest());
-        System.out.println("Hash of checkpoints data is " + checkpointsHash);
+        Sha256Hash checkpointsHash = new Sha256Hash(digest.digest());
+        System.out.println("Sha256Hash of checkpoints data is " + checkpointsHash);
         digestOutputStream.close();
         fileOutputStream.close();
 

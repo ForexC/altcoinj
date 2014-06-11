@@ -57,7 +57,7 @@ public class MemoryPool {
     // confidence pre-chain inclusion assuming an un-tampered with network connection. After we see the full transaction
     // we need to switch from tracking that data in the Entry to tracking it in the TransactionConfidence object itself.
     private static class WeakTransactionReference extends WeakReference<Transaction> {
-        public Hash hash;
+        public Sha256Hash hash;
         public WeakTransactionReference(Transaction tx, ReferenceQueue<Transaction> queue) {
             super(tx, queue);
             hash = tx.getHash();
@@ -72,7 +72,7 @@ public class MemoryPool {
         // allowing us to delete the associated entry (the tx itself has already gone away).
         WeakTransactionReference tx;
     }
-    private LinkedHashMap<Hash, Entry> memoryPool;
+    private LinkedHashMap<Sha256Hash, Entry> memoryPool;
 
     // This ReferenceQueue gets entries added to it when they are only weakly reachable, ie, the MemoryPool is the
     // only thing that is tracking the transaction anymore. We check it from time to time and delete memoryPool entries
@@ -90,9 +90,9 @@ public class MemoryPool {
      * @param size Max number of transactions to track. The pool will fill up to this size then stop growing.
      */
     public MemoryPool(final int size) {
-        memoryPool = new LinkedHashMap<Hash, Entry>() {
+        memoryPool = new LinkedHashMap<Sha256Hash, Entry>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<Hash, Entry> entry) {
+            protected boolean removeEldestEntry(Map.Entry<Sha256Hash, Entry> entry) {
                 // An arbitrary choice to stop the memory used by tracked transactions getting too huge in the event
                 // of some kind of DoS attack.
                 return size() > size;
@@ -133,7 +133,7 @@ public class MemoryPool {
     /**
      * Returns the number of peers that have seen the given hash recently.
      */
-    public int numBroadcastPeers(Hash txHash) {
+    public int numBroadcastPeers(Sha256Hash txHash) {
         lock.lock();
         try {
             cleanPool();
@@ -235,7 +235,7 @@ public class MemoryPool {
      * Called by peers when they see a transaction advertised in an "inv" message. It either will increase the
      * confidence of the pre-existing transaction or will just keep a record of the address for future usage.
      */
-    public void seen(Hash hash, PeerAddress byPeer) {
+    public void seen(Sha256Hash hash, PeerAddress byPeer) {
         lock.lock();
         try {
             cleanPool();
@@ -286,7 +286,7 @@ public class MemoryPool {
      * holding a reference to it.
      */
     @Nullable
-    public Transaction get(Hash hash) {
+    public Transaction get(Sha256Hash hash) {
         lock.lock();
         try {
             Entry entry = memoryPool.get(hash);
@@ -306,7 +306,7 @@ public class MemoryPool {
      * was broadcast, downloaded and nothing kept a reference to it will eventually be cleared out by the garbage
      * collector and wasSeen() will return false - it does not keep a permanent record of every hash ever broadcast.
      */
-    public boolean maybeWasSeen(Hash hash) {
+    public boolean maybeWasSeen(Sha256Hash hash) {
         lock.lock();
         try {
             Entry entry = memoryPool.get(hash);

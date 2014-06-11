@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 
 public class DeterministicKeyChainTest {
     private DeterministicKeyChain chain;
-    private final byte[] SEED = Hash.create("don't use a string seed like this in real life".getBytes()).getBytes();
+    private final byte[] SEED = Sha256Hash.create("don't use a string seed like this in real life".getBytes()).getBytes();
 
     @Before
     public void setup() {
@@ -73,11 +73,11 @@ public class DeterministicKeyChainTest {
         assertEquals(key1, chain.findKeyFromPubHash(address.getHash160()));
         assertEquals(key2, chain.findKeyFromPubKey(key2.getPubKey()));
 
-        key1.sign(Hash.ZERO_HASH);
+        key1.sign(Sha256Hash.ZERO_HASH);
 
         ECKey key3 = chain.getKey(KeyChain.KeyPurpose.CHANGE);
         assertEquals("mnXiDR4MKsFxcKJEZjx4353oXvo55iuptn", key3.toAddress(UnitTestParams.get()).toString());
-        key3.sign(Hash.ZERO_HASH);
+        key3.sign(Sha256Hash.ZERO_HASH);
     }
 
     @Test
@@ -123,8 +123,8 @@ public class DeterministicKeyChainTest {
         // a fixed seed to be deterministic.
         chain = new DeterministicKeyChain(new SecureRandom());
         chain.setLookaheadSize(10);
-        chain.getKey(KeyChain.KeyPurpose.RECEIVE_FUNDS).sign(Hash.ZERO_HASH);
-        chain.getKey(KeyChain.KeyPurpose.CHANGE).sign(Hash.ZERO_HASH);
+        chain.getKey(KeyChain.KeyPurpose.RECEIVE_FUNDS).sign(Sha256Hash.ZERO_HASH);
+        chain.getKey(KeyChain.KeyPurpose.CHANGE).sign(Sha256Hash.ZERO_HASH);
     }
 
     @Test
@@ -150,10 +150,10 @@ public class DeterministicKeyChainTest {
         assertEquals(key2, chain.findKeyFromPubHash(key2.getPubKeyHash()));
         assertEquals(key3, chain.findKeyFromPubHash(key3.getPubKeyHash()));
         assertEquals(key4, chain.getKey(KeyChain.KeyPurpose.CHANGE));
-        key1.sign(Hash.ZERO_HASH);
-        key2.sign(Hash.ZERO_HASH);
-        key3.sign(Hash.ZERO_HASH);
-        key4.sign(Hash.ZERO_HASH);
+        key1.sign(Sha256Hash.ZERO_HASH);
+        key2.sign(Sha256Hash.ZERO_HASH);
+        key3.sign(Sha256Hash.ZERO_HASH);
+        key4.sign(Sha256Hash.ZERO_HASH);
         assertEquals(oldLookaheadSize, chain.getLookaheadSize());
     }
 
@@ -176,8 +176,8 @@ public class DeterministicKeyChainTest {
         assertTrue(encKey1.isEncrypted());
         assertEquals(encKey1.getPubKeyPoint(), key1.getPubKeyPoint());
         final KeyParameter aesKey = checkNotNull(encChain.getKeyCrypter()).deriveKey("open secret");
-        encKey1.sign(Hash.ZERO_HASH, aesKey);
-        encKey2.sign(Hash.ZERO_HASH, aesKey);
+        encKey1.sign(Sha256Hash.ZERO_HASH, aesKey);
+        encKey2.sign(Sha256Hash.ZERO_HASH, aesKey);
         assertTrue(encChain.checkAESKey(aesKey));
         assertFalse(encChain.checkPassword("access denied"));
         assertTrue(encChain.checkPassword("open secret"));
@@ -213,8 +213,8 @@ public class DeterministicKeyChainTest {
         assertFalse(decKey2.isEncrypted());
         assertNotEquals(encKey1.getParent(), decKey1.getParent());   // parts of a different hierarchy
         // Check we can once again derive keys from the decrypted chain.
-        decChain.getKey(KeyChain.KeyPurpose.RECEIVE_FUNDS).sign(Hash.ZERO_HASH);
-        decChain.getKey(KeyChain.KeyPurpose.CHANGE).sign(Hash.ZERO_HASH);
+        decChain.getKey(KeyChain.KeyPurpose.RECEIVE_FUNDS).sign(Sha256Hash.ZERO_HASH);
+        decChain.getKey(KeyChain.KeyPurpose.CHANGE).sign(Sha256Hash.ZERO_HASH);
     }
 
     @Test
@@ -239,7 +239,7 @@ public class DeterministicKeyChainTest {
         assertEquals(key3.getPubKeyPoint(), key.getPubKeyPoint());
         try {
             // Can't sign with a key from a watching chain.
-            key.sign(Hash.ZERO_HASH);
+            key.sign(Sha256Hash.ZERO_HASH);
             fail();
         } catch (ECKey.MissingPrivateKeyException e) {
             // Ignored.

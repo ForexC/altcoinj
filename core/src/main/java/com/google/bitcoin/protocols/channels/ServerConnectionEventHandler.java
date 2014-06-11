@@ -17,7 +17,7 @@
 package com.google.bitcoin.protocols.channels;
 
 import com.google.bitcoin.core.Coin;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.net.ProtobufParser;
 
 import org.bitcoin.paymentchannel.Protos;
@@ -41,8 +41,8 @@ public abstract class ServerConnectionEventHandler {
      * <p>Note that this does <i>NOT</i> actually broadcast the most recent payment transaction, which will be triggered
      * automatically when the channel times out by the {@link StoredPaymentChannelServerStates}, or manually by calling
      * {@link StoredPaymentChannelServerStates#closeChannel(StoredServerChannel)} with the channel returned by
-     * {@link StoredPaymentChannelServerStates#getChannel(com.google.bitcoin.core.Hash)} with the id provided in
-     * {@link ServerConnectionEventHandler#channelOpen(com.google.bitcoin.core.Hash)}</p>
+     * {@link StoredPaymentChannelServerStates#getChannel(com.google.bitcoin.core.Sha256Hash)} with the id provided in
+     * {@link ServerConnectionEventHandler#channelOpen(com.google.bitcoin.core.Sha256Hash)}</p>
      */
     @SuppressWarnings("unchecked")
     // The warning 'unchecked call to write(MessageType)' being suppressed here comes from the build()
@@ -62,7 +62,7 @@ public abstract class ServerConnectionEventHandler {
      *
      * @param channelId A unique identifier which represents this channel (actually the hash of the multisig contract)
      */
-    public abstract void channelOpen(Hash channelId);
+    public abstract void channelOpen(Sha256Hash channelId);
 
     /**
      * Called when the payment in this channel was successfully incremented by the client
@@ -74,7 +74,7 @@ public abstract class ServerConnectionEventHandler {
 
     /**
      * <p>Called when the channel was closed for some reason. May be called without a call to
-     * {@link ServerConnectionEventHandler#channelOpen(com.google.bitcoin.core.Hash)}.</p>
+     * {@link ServerConnectionEventHandler#channelOpen(com.google.bitcoin.core.Sha256Hash)}.</p>
      *
      * <p>Note that the same channel can be reopened at any point before it expires if the client reconnects and
      * requests it.</p>

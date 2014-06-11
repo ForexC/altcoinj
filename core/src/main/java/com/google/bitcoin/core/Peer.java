@@ -117,13 +117,13 @@ public class Peer extends PeerSocketHandler {
     //
     // It is important to avoid a nasty edge case where we can end up with parallel chain downloads proceeding
     // simultaneously if we were to receive a newly solved block whilst parts of the chain are streaming to us.
-    private final HashSet<Hash> pendingBlockDownloads = new HashSet<Hash>();
+    private final HashSet<Sha256Hash> pendingBlockDownloads = new HashSet<Sha256Hash>();
     // The lowest version number we're willing to accept. Lower than this will result in an immediate disconnect.
     private volatile int vMinProtocolVersion = Pong.MIN_PROTOCOL_VERSION;
     // When an API user explicitly requests a block or transaction from a peer, the InventoryItem is put here
     // whilst waiting for the response. Is not used for downloads Peer generates itself.
     private static class GetDataRequest {
-        Hash hash;
+        Sha256Hash hash;
         SettableFuture future;
         // If the peer does not support the notfound message, we'll use ping/pong messages to simulate it. This is
         // a nasty hack that relies on the fact that bitcoin-qt is single threaded and processes messages in order.
@@ -515,8 +515,8 @@ public class Peer extends PeerSocketHandler {
                                 m.getBlockHeaders().size() - i);
                         this.downloadBlockBodies = true;
                         // Prevent this request being seen as a duplicate.
-                        this.lastGetBlocksBegin = Hash.ZERO_HASH;
-                        blockChainDownloadLocked(Hash.ZERO_HASH);
+                        this.lastGetBlocksBegin = Sha256Hash.ZERO_HASH;
+                        blockChainDownloadLocked(Sha256Hash.ZERO_HASH);
                     } finally {
                         lock.unlock();
                     }
@@ -528,7 +528,7 @@ public class Peer extends PeerSocketHandler {
             if (m.getBlockHeaders().size() >= HeadersMessage.MAX_HEADERS) {
                 lock.lock();
                 try {
-                    blockChainDownloadLocked(Hash.ZERO_HASH);
+                    blockChainDownloadLocked(Sha256Hash.ZERO_HASH);
                 } finally {
                     lock.unlock();
                 }
@@ -689,7 +689,7 @@ public class Peer extends PeerSocketHandler {
                                                                   final List<Transaction> results) {
         checkNotNull(memoryPool, "Must have a configured MemoryPool object to download dependencies.");
         final SettableFuture<Object> resultFuture = SettableFuture.create();
-        final Hash rootTxHash = tx.getHash();
+        final Sha256Hash rootTxHash = tx.getHash();
         // We want to recursively grab its dependencies. This is so listeners can learn important information like
         // whether a transaction is dependent on a timelocked transaction or has an unexpectedly deep dependency tree
         // or depends on a no-fee transaction.
@@ -698,10 +698,10 @@ public class Peer extends PeerSocketHandler {
         // be deleted. Use COW sets to make unit tests deterministic and because they are small. It's slower for
         // the case of transactions with tons of inputs.
         Set<Transaction> dependencies = new CopyOnWriteArraySet<Transaction>();
-        Set<Hash> needToRequest = new CopyOnWriteArraySet<Hash>();
+        Set<Sha256Hash> needToRequest = new CopyOnWriteArraySet<Sha256Hash>();
         for (TransactionInput input : tx.getInputs()) {
             // There may be multiple inputs that connect to the same transaction.
-            Hash hash = input.getOutpoint().getHash();
+            Sha256Hash hash = input.getOutpoint().getHash();
             Transaction dep = memoryPool.get(hash);
             if (dep == null) {
                 needToRequest.add(hash);
@@ -718,7 +718,7 @@ public class Peer extends PeerSocketHandler {
             final long nonce = (long)(Math.random()*Long.MAX_VALUE);
             if (needToRequest.size() > 1)
                 log.info("{}: Requesting {} transactions for dep resolution", getAddress(), needToRequest.size());
-            for (Hash hash : needToRequest) {
+            for (Sha256Hash hash : needToRequest) {
                 getdata.addTransaction(hash);
                 GetDataRequest req = new GetDataRequest();
                 req.hash = hash;
@@ -937,7 +937,7 @@ public class Peer extends PeerSocketHandler {
 
     private boolean maybeHandleRequestedData(Message m) {
         boolean found = false;
-        Hash hash = m.getHash();
+        Sha256Hash hash = m.getHash();
         for (GetDataRequest req : getDataFutures) {
             if (hash.equals(req.hash)) {
                 req.future.set(m);
@@ -1097,7 +1097,7 @@ public class Peer extends PeerSocketHandler {
     // The 'unchecked conversion' warning being suppressed here comes from the sendSingleGetData() formally returning
     // ListenableFuture instead of ListenableFuture<Block>. This is okay as sendSingleGetData() actually returns
     // ListenableFuture<Block> in this context. Note that sendSingleGetData() is also used for Transactions.
-    public ListenableFuture<Block> getBlock(Hash blockHash) {
+    public ListenableFuture<Block> getBlock(Sha256Hash blockHash) {
         // This does not need to be locked.
         log.info("Request to fetch block {}", blockHash);
         GetDataMessage getdata = new GetDataMessage(params);
@@ -1114,7 +1114,7 @@ public class Peer extends PeerSocketHandler {
     // The 'unchecked conversion' warning being suppressed here comes from the sendSingleGetData() formally returning
     // ListenableFuture instead of ListenableFuture<Transaction>. This is okay as sendSingleGetData() actually returns
     // ListenableFuture<Transaction> in this context. Note that sendSingleGetData() is also used for Blocks.
-    public ListenableFuture<Transaction> getPeerMempoolTransaction(Hash hash) {
+    public ListenableFuture<Transaction> getPeerMempoolTransaction(Sha256Hash hash) {
         // This does not need to be locked.
         // TODO: Unit test this method.
         log.info("Request to fetch peer mempool tx  {}", hash);
@@ -1182,10 +1182,10 @@ public class Peer extends PeerSocketHandler {
     // Keep track of the last request we made to the peer in blockChainDownloadLocked so we can avoid redundant and harmful
     // getblocks requests.
     @GuardedBy("lock")
-    private Hash lastGetBlocksBegin, lastGetBlocksEnd;
+    private Sha256Hash lastGetBlocksBegin, lastGetBlocksEnd;
 
     @GuardedBy("lock")
-    private void blockChainDownloadLocked(Hash toHash) {
+    private void blockChainDownloadLocked(Sha256Hash toHash) {
         checkState(lock.isHeldByCurrentThread());
         // The block chain download process is a bit complicated. Basically, we start with one or more blocks in a
         // chain that we have from a previous session. We want to catch up to the head of the chain BUT we don't know
@@ -1221,7 +1221,7 @@ public class Peer extends PeerSocketHandler {
         // sends us the data we requested in a "headers" message.
 
         // TODO: Block locators should be abstracted out rather than special cased here.
-        List<Hash> blockLocator = new ArrayList<Hash>(51);
+        List<Sha256Hash> blockLocator = new ArrayList<Sha256Hash>(51);
         // For now we don't do the exponential thinning as suggested here:
         //
         //   https://en.bitcoin.it/wiki/Protocol_specification#getblocks
@@ -1231,7 +1231,7 @@ public class Peer extends PeerSocketHandler {
         // must always put the genesis block as the first entry.
         BlockStore store = checkNotNull(blockChain).getBlockStore();
         StoredBlock chainHead = blockChain.getChainHead();
-        Hash chainHeadHash = chainHead.getHeader().getHash();
+        Sha256Hash chainHeadHash = chainHead.getHeader().getHash();
         // Did we already make this request? If so, don't do it again.
         if (Objects.equal(lastGetBlocksBegin, chainHeadHash) && Objects.equal(lastGetBlocksEnd, toHash)) {
             log.info("blockChainDownloadLocked({}): ignoring duplicated request", toHash.toString());
@@ -1290,7 +1290,7 @@ public class Peer extends PeerSocketHandler {
             // When we just want as many blocks as possible, we can set the target hash to zero.
             lock.lock();
             try {
-                blockChainDownloadLocked(Hash.ZERO_HASH);
+                blockChainDownloadLocked(Sha256Hash.ZERO_HASH);
             } finally {
                 lock.unlock();
             }

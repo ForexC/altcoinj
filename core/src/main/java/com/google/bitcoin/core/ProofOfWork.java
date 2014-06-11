@@ -11,9 +11,9 @@ import static com.google.bitcoin.core.Utils.doubleDigest;
  * <p></p>
  */
 public abstract class ProofOfWork implements Serializable {
-    protected abstract Hash hash(byte[] header);
+    protected abstract Sha256Hash hash(byte[] header);
 
-    public Hash getHash(Block block) {
+    public Sha256Hash getHash(Block block) {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(Block.HEADER_SIZE);
             block.writeHeader(bos);
@@ -30,7 +30,7 @@ public abstract class ProofOfWork implements Serializable {
         if (h.compareTo(target) > 0) {
             // Proof of work check failed!
             if (throwException)
-                throw new VerificationException("Hash is higher than target: " + block.getHashAsString() + " vs "
+                throw new VerificationException("Sha256Hash is higher than target: " + block.getHashAsString() + " vs "
                         + target.toString(16));
             else
                 return false;

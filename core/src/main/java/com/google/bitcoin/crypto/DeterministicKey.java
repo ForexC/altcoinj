@@ -212,7 +212,7 @@ public class DeterministicKey extends ECKey {
     }
 
     @Override
-    public ECDSASignature sign(Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
+    public ECDSASignature sign(Sha256Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
         if (isEncrypted()) {
             // If the key is encrypted, ECKey.sign will decrypt it first before rerunning sign. Decryption walks the
             // key heirarchy to find the private key (see below), so, we can just run the inherited method.

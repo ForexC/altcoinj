@@ -132,7 +132,7 @@ public class PeerTest extends TestWithNetworkConnections {
         peer.startBlockChainDownload();
         GetBlocksMessage getblocks = (GetBlocksMessage)outbound(writeTarget);
         assertEquals(blockStore.getChainHead().getHeader().getHash(), getblocks.getLocator().get(0));
-        assertEquals(Hash.ZERO_HASH, getblocks.getStopHash());
+        assertEquals(Sha256Hash.ZERO_HASH, getblocks.getStopHash());
         // Remote peer sends us an inv with some blocks.
         InventoryMessage inv = new InventoryMessage(unitTestParams);
         inv.addBlock(b2);
@@ -208,7 +208,7 @@ public class PeerTest extends TestWithNetworkConnections {
         inbound(writeTarget, inv);
 
         GetBlocksMessage getblocks = (GetBlocksMessage)outbound(writeTarget);
-        List<Hash> expectedLocator = new ArrayList<Hash>();
+        List<Sha256Hash> expectedLocator = new ArrayList<Sha256Hash>();
         expectedLocator.add(b1.getHash());
         expectedLocator.add(unitTestParams.getGenesisBlock().getHash());
         
@@ -378,14 +378,14 @@ public class PeerTest extends TestWithNetworkConnections {
         }, Threading.SAME_THREAD);
         peer.startBlockChainDownload();
 
-        List<Hash> expectedLocator = new ArrayList<Hash>();
+        List<Sha256Hash> expectedLocator = new ArrayList<Sha256Hash>();
         expectedLocator.add(b2.getHash());
         expectedLocator.add(b1.getHash());
         expectedLocator.add(unitTestParams.getGenesisBlock().getHash());
 
         GetBlocksMessage message = (GetBlocksMessage) outbound(writeTarget);
         assertEquals(message.getLocator(), expectedLocator);
-        assertEquals(Hash.ZERO_HASH, message.getStopHash());
+        assertEquals(Sha256Hash.ZERO_HASH, message.getStopHash());
     }
 
     @Test
@@ -454,11 +454,11 @@ public class PeerTest extends TestWithNetworkConnections {
         peer.setDownloadParameters(Utils.currentTimeSeconds() - (600*2) + 1, false);
         peer.startBlockChainDownload();
         GetHeadersMessage getheaders = (GetHeadersMessage) outbound(writeTarget);
-        List<Hash> expectedLocator = new ArrayList<Hash>();
+        List<Sha256Hash> expectedLocator = new ArrayList<Sha256Hash>();
         expectedLocator.add(b1.getHash());
         expectedLocator.add(unitTestParams.getGenesisBlock().getHash());
         assertEquals(getheaders.getLocator(), expectedLocator);
-        assertEquals(getheaders.getStopHash(), Hash.ZERO_HASH);
+        assertEquals(getheaders.getStopHash(), Sha256Hash.ZERO_HASH);
         // Now send all the headers.
         HeadersMessage headers = new HeadersMessage(unitTestParams, b2.cloneAsHeader(),
                 b3.cloneAsHeader(), b4.cloneAsHeader());
@@ -470,7 +470,7 @@ public class PeerTest extends TestWithNetworkConnections {
         inbound(writeTarget, headers);
         GetBlocksMessage getblocks = (GetBlocksMessage) outbound(writeTarget);
         assertEquals(expectedLocator, getblocks.getLocator());
-        assertEquals(Hash.ZERO_HASH, getblocks.getStopHash());
+        assertEquals(Sha256Hash.ZERO_HASH, getblocks.getStopHash());
         // We're supposed to get an inv here.
         InventoryMessage inv = new InventoryMessage(unitTestParams);
         inv.addItem(new InventoryItem(InventoryItem.Type.Block, b3.getHash()));
@@ -545,9 +545,9 @@ public class PeerTest extends TestWithNetworkConnections {
         //      -> [t8]
         // The ones in brackets are assumed to be in the chain and are represented only by hashes.
         Transaction t2 = FakeTxBuilder.createFakeTx(unitTestParams, COIN, to);
-        Hash t5 = t2.getInput(0).getOutpoint().getHash();
+        Sha256Hash t5 = t2.getInput(0).getOutpoint().getHash();
         Transaction t4 = FakeTxBuilder.createFakeTx(unitTestParams, COIN, new ECKey());
-        Hash t6 = t4.getInput(0).getOutpoint().getHash();
+        Sha256Hash t6 = t4.getInput(0).getOutpoint().getHash();
         t4.addOutput(COIN, new ECKey());
         Transaction t3 = new Transaction(unitTestParams);
         t3.addInput(t4.getOutput(0));
@@ -555,9 +555,9 @@ public class PeerTest extends TestWithNetworkConnections {
         Transaction t1 = new Transaction(unitTestParams);
         t1.addInput(t2.getOutput(0));
         t1.addInput(t3.getOutput(0));
-        Hash someHash = new Hash("2b801dd82f01d17bbde881687bf72bc62e2faa8ab8133d36fcb8c3abe7459da6");
+        Sha256Hash someHash = new Sha256Hash("2b801dd82f01d17bbde881687bf72bc62e2faa8ab8133d36fcb8c3abe7459da6");
         t1.addInput(new TransactionInput(unitTestParams, t1, new byte[]{}, new TransactionOutPoint(unitTestParams, 0, someHash)));
-        Hash anotherHash = new Hash("3b801dd82f01d17bbde881687bf72bc62e2faa8ab8133d36fcb8c3abe7459da6");
+        Sha256Hash anotherHash = new Sha256Hash("3b801dd82f01d17bbde881687bf72bc62e2faa8ab8133d36fcb8c3abe7459da6");
         t1.addInput(new TransactionInput(unitTestParams, t1, new byte[]{}, new TransactionOutPoint(unitTestParams, 1, anotherHash)));
         t1.addOutput(COIN, to);
         t1 = FakeTxBuilder.roundTripTransaction(unitTestParams, t1);
@@ -741,7 +741,7 @@ public class PeerTest extends TestWithNetworkConnections {
         Transaction t2 = new Transaction(unitTestParams);
         t2.setLockTime(999999);
         // Add a fake input to t3 that goes nowhere.
-        Hash t3 = Hash.create("abc".getBytes(Charset.forName("UTF-8")));
+        Sha256Hash t3 = Sha256Hash.create("abc".getBytes(Charset.forName("UTF-8")));
         t2.addInput(new TransactionInput(unitTestParams, t2, new byte[]{}, new TransactionOutPoint(unitTestParams, 0, t3)));
         t2.getInput(0).setSequenceNumber(0xDEADBEEF);
         t2.addOutput(COIN, new ECKey());
@@ -881,9 +881,9 @@ public class PeerTest extends TestWithNetworkConnections {
             @Override
             public void bitcoinSerializeToStream(OutputStream stream) throws IOException {
                 // Add some hashes.
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Hash.create(new byte[]{1})));
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Hash.create(new byte[]{2})));
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Hash.create(new byte[]{3})));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{1})));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{2})));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{3})));
 
                 // Write out a copy that's truncated in the middle.
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();

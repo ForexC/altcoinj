@@ -114,7 +114,7 @@ public class BlockChain extends AbstractBlockChain {
     }
 
     @Override
-    protected StoredBlock getStoredBlockInCurrentScope(Hash hash) throws BlockStoreException {
+    protected StoredBlock getStoredBlockInCurrentScope(Sha256Hash hash) throws BlockStoreException {
         return blockStore.get(hash);
     }
 

@@ -32,12 +32,12 @@ import java.util.*;
 class StoredTransactionOutPoint implements Serializable {
     private static final long serialVersionUID = -4064230006297064377L;
 
-    /** Hash of the transaction to which we refer. */
-    Hash hash;
+    /** Sha256Hash of the transaction to which we refer. */
+    Sha256Hash hash;
     /** Which output of that transaction we are talking about. */
     long index;
     
-    StoredTransactionOutPoint(Hash hash, long index) {
+    StoredTransactionOutPoint(Sha256Hash hash, long index) {
         this.hash = hash;
         this.index = index;
     }
@@ -50,7 +50,7 @@ class StoredTransactionOutPoint implements Serializable {
     /**
      * The hash of the transaction to which we refer
      */
-    Hash getHash() {
+    Sha256Hash getHash() {
         return hash;
     }
     
@@ -233,8 +233,8 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
         public boolean wasUndoable;
         public StoredBlockAndWasUndoableFlag(StoredBlock block, boolean wasUndoable) { this.block = block; this.wasUndoable = wasUndoable; }
     }
-    private TransactionalHashMap<Hash, StoredBlockAndWasUndoableFlag> blockMap;
-    private TransactionalMultiKeyHashMap<Hash, Integer, StoredUndoableBlock> fullBlockMap;
+    private TransactionalHashMap<Sha256Hash, StoredBlockAndWasUndoableFlag> blockMap;
+    private TransactionalMultiKeyHashMap<Sha256Hash, Integer, StoredUndoableBlock> fullBlockMap;
     //TODO: Use something more suited to remove-heavy use?
     private TransactionalHashMap<StoredTransactionOutPoint, StoredTransactionOutput> transactionOutputMap;
     private StoredBlock chainHead;
@@ -247,8 +247,8 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
      * @param fullStoreDepth The depth of blocks to keep FullStoredBlocks instead of StoredBlocks
      */
     public MemoryFullPrunedBlockStore(NetworkParameters params, int fullStoreDepth) {
-        blockMap = new TransactionalHashMap<Hash, StoredBlockAndWasUndoableFlag>();
-        fullBlockMap = new TransactionalMultiKeyHashMap<Hash, Integer, StoredUndoableBlock>();
+        blockMap = new TransactionalHashMap<Sha256Hash, StoredBlockAndWasUndoableFlag>();
+        fullBlockMap = new TransactionalMultiKeyHashMap<Sha256Hash, Integer, StoredUndoableBlock>();
         transactionOutputMap = new TransactionalHashMap<StoredTransactionOutPoint, StoredTransactionOutput>();
         this.fullStoreDepth = fullStoreDepth > 0 ? fullStoreDepth : 1;
         // Insert the genesis block.
@@ -270,21 +270,21 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
     @Override
     public synchronized void put(StoredBlock block) throws BlockStoreException {
         Preconditions.checkNotNull(blockMap, "MemoryFullPrunedBlockStore is closed");
-        Hash hash = block.getHeader().getHash();
+        Sha256Hash hash = block.getHeader().getHash();
         blockMap.put(hash, new StoredBlockAndWasUndoableFlag(block, false));
     }
     
     @Override
     public synchronized void put(StoredBlock storedBlock, StoredUndoableBlock undoableBlock) throws BlockStoreException {
         Preconditions.checkNotNull(blockMap, "MemoryFullPrunedBlockStore is closed");
-        Hash hash = storedBlock.getHeader().getHash();
+        Sha256Hash hash = storedBlock.getHeader().getHash();
         fullBlockMap.put(hash, storedBlock.getHeight(), undoableBlock);
         blockMap.put(hash, new StoredBlockAndWasUndoableFlag(storedBlock, true));
     }
 
     @Override
     @Nullable
-    public synchronized StoredBlock get(Hash hash) throws BlockStoreException {
+    public synchronized StoredBlock get(Sha256Hash hash) throws BlockStoreException {
         Preconditions.checkNotNull(blockMap, "MemoryFullPrunedBlockStore is closed");
         StoredBlockAndWasUndoableFlag storedBlock = blockMap.get(hash);
         return storedBlock == null ? null : storedBlock.block;
@@ -292,7 +292,7 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
     
     @Override
     @Nullable
-    public synchronized StoredBlock getOnceUndoableStoredBlock(Hash hash) throws BlockStoreException {
+    public synchronized StoredBlock getOnceUndoableStoredBlock(Sha256Hash hash) throws BlockStoreException {
         Preconditions.checkNotNull(blockMap, "MemoryFullPrunedBlockStore is closed");
         StoredBlockAndWasUndoableFlag storedBlock = blockMap.get(hash);
         return (storedBlock != null && storedBlock.wasUndoable) ? storedBlock.block : null;
@@ -300,7 +300,7 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
     
     @Override
     @Nullable
-    public synchronized StoredUndoableBlock getUndoBlock(Hash hash) throws BlockStoreException {
+    public synchronized StoredUndoableBlock getUndoBlock(Sha256Hash hash) throws BlockStoreException {
         Preconditions.checkNotNull(fullBlockMap, "MemoryFullPrunedBlockStore is closed");
         return fullBlockMap.get(hash);
     }
@@ -343,7 +343,7 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
     
     @Override
     @Nullable
-    public synchronized StoredTransactionOutput getTransactionOutput(Hash hash, long index) throws BlockStoreException {
+    public synchronized StoredTransactionOutput getTransactionOutput(Sha256Hash hash, long index) throws BlockStoreException {
         Preconditions.checkNotNull(transactionOutputMap, "MemoryFullPrunedBlockStore is closed");
         return transactionOutputMap.get(new StoredTransactionOutPoint(hash, index));
     }
@@ -382,7 +382,7 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
         transactionOutputMap.abortDatabaseBatchWrite();
     }
 
-    public synchronized boolean hasUnspentOutputs(Hash hash, int numOutputs) throws BlockStoreException {
+    public synchronized boolean hasUnspentOutputs(Sha256Hash hash, int numOutputs) throws BlockStoreException {
         for (int i = 0; i < numOutputs; i++)
             if (getTransactionOutput(hash, i) != null)
                 return true;

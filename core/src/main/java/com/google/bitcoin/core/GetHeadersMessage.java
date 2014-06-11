@@ -25,7 +25,7 @@ import java.util.List;
  * the bodies for those blocks because you know there are no relevant transactions.
  */
 public class GetHeadersMessage extends GetBlocksMessage {
-    public GetHeadersMessage(NetworkParameters params, List<Hash> locator, Hash stopHash) {
+    public GetHeadersMessage(NetworkParameters params, List<Sha256Hash> locator, Sha256Hash stopHash) {
         super(params, locator, stopHash);
     }
 
@@ -37,7 +37,7 @@ public class GetHeadersMessage extends GetBlocksMessage {
     public String toString() {
         StringBuffer b = new StringBuffer();
         b.append("getheaders: ");
-        for (Hash hash : locator) {
+        for (Sha256Hash hash : locator) {
             b.append(hash.toString());
             b.append(" ");
         }
@@ -62,7 +62,7 @@ public class GetHeadersMessage extends GetBlocksMessage {
     @Override
     public int hashCode() {
         int hashCode = (int) version ^ "getheaders".hashCode();
-        for (Hash aLocator : locator) hashCode ^= aLocator.hashCode();
+        for (Sha256Hash aLocator : locator) hashCode ^= aLocator.hashCode();
         hashCode ^= stopHash.hashCode();
         return hashCode;
     }

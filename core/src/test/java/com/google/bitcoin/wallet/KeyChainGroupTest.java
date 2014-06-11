@@ -18,7 +18,7 @@ package com.google.bitcoin.wallet;
 
 import com.google.bitcoin.core.BloomFilter;
 import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.Utils;
 import com.google.bitcoin.crypto.DeterministicKey;
 import com.google.bitcoin.crypto.KeyCrypterException;
@@ -164,7 +164,7 @@ public class KeyChainGroupTest {
             assertEquals(now, group.getEarliestKeyCreationTime());
         }
         try {
-            ea.sign(Hash.ZERO_HASH);
+            ea.sign(Sha256Hash.ZERO_HASH);
             fail();
         } catch (ECKey.KeyIsEncryptedException e) {
             // Ignored.

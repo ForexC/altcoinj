@@ -16,7 +16,6 @@
 
 package com.google.bitcoin.core;
 
-import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.utils.ListenerRegistration;
@@ -29,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
@@ -110,9 +108,9 @@ public abstract class AbstractBlockChain {
     // Holds a block header and, optionally, a list of tx hashes or block's transactions
     class OrphanBlock {
         final Block block;
-        final List<Hash> filteredTxHashes;
-        final Map<Hash, Transaction> filteredTxn;
-        OrphanBlock(Block block, @Nullable List<Hash> filteredTxHashes, @Nullable Map<Hash, Transaction> filteredTxn) {
+        final List<Sha256Hash> filteredTxHashes;
+        final Map<Sha256Hash, Transaction> filteredTxn;
+        OrphanBlock(Block block, @Nullable List<Sha256Hash> filteredTxHashes, @Nullable Map<Sha256Hash, Transaction> filteredTxn) {
             final boolean filtered = filteredTxHashes != null && filteredTxn != null;
             Preconditions.checkArgument((block.transactions == null && filtered)
                                         || (block.transactions != null && !filtered));
@@ -126,7 +124,7 @@ public abstract class AbstractBlockChain {
     }
     // Holds blocks that we have received but can't plug into the chain yet, eg because they were created whilst we
     // were downloading the block chain.
-    private final LinkedHashMap<Hash, OrphanBlock> orphanBlocks = new LinkedHashMap<Hash, OrphanBlock>();
+    private final LinkedHashMap<Sha256Hash, OrphanBlock> orphanBlocks = new LinkedHashMap<Sha256Hash, OrphanBlock>();
 
     /** False positive estimation uses a double exponential moving average. */
     public static final double FP_ESTIMATOR_ALPHA = 0.0001;
@@ -240,7 +238,7 @@ public abstract class AbstractBlockChain {
      * For a standard BlockChain, this should return blockStore.get(hash),
      * for a FullPrunedBlockChain blockStore.getOnceUndoableStoredBlock(hash)
      */
-    protected abstract StoredBlock getStoredBlockInCurrentScope(Hash hash) throws BlockStoreException;
+    protected abstract StoredBlock getStoredBlockInCurrentScope(Sha256Hash hash) throws BlockStoreException;
 
     /**
      * Processes a received block and tries to add it to the chain. If there's something wrong with the block an
@@ -328,7 +326,7 @@ public abstract class AbstractBlockChain {
 
     // filteredTxHashList contains all transactions, filteredTxn just a subset
     private boolean add(Block block, boolean tryConnecting,
-                        @Nullable List<Hash> filteredTxHashList, @Nullable Map<Hash, Transaction> filteredTxn)
+                        @Nullable List<Sha256Hash> filteredTxHashList, @Nullable Map<Sha256Hash, Transaction> filteredTxn)
             throws BlockStoreException, VerificationException, PrunedException {
         lock.lock();
         try {
@@ -412,8 +410,8 @@ public abstract class AbstractBlockChain {
     // than the previous one when connecting (eg median timestamp check)
     // It could be exposed, but for now we just set it to shouldVerifyTransactions()
     private void connectBlock(final Block block, StoredBlock storedPrev, boolean expensiveChecks,
-                              @Nullable final List<Hash> filteredTxHashList,
-                              @Nullable final Map<Hash, Transaction> filteredTxn) throws BlockStoreException, VerificationException, PrunedException {
+                              @Nullable final List<Sha256Hash> filteredTxHashList,
+                              @Nullable final Map<Sha256Hash, Transaction> filteredTxn) throws BlockStoreException, VerificationException, PrunedException {
         checkState(lock.isHeldByCurrentThread());
         boolean filtered = filteredTxHashList != null && filteredTxn != null;
         // Check that we aren't connecting a block that fails a checkpoint check
@@ -431,7 +429,7 @@ public abstract class AbstractBlockChain {
             if (filtered && filteredTxn.size() > 0)  {
                 log.debug("Block {} connects to top of best chain with {} transaction(s) of which we were sent {}",
                         block.getHashAsString(), filteredTxHashList.size(), filteredTxn.size());
-                for (Hash hash : filteredTxHashList) log.debug("  matched tx {}", hash);
+                for (Sha256Hash hash : filteredTxHashList) log.debug("  matched tx {}", hash);
             }
             if (expensiveChecks && block.getTimeSeconds() <= getMedianTimestampOfRecentBlocks(head, blockStore))
                 throw new VerificationException("Block's timestamp is too early");
@@ -492,14 +490,14 @@ public abstract class AbstractBlockChain {
     }
 
     private void informListenersForNewBlock(final Block block, final NewBlockType newBlockType,
-                                            @Nullable final List<Hash> filteredTxHashList,
-                                            @Nullable final Map<Hash, Transaction> filteredTxn,
+                                            @Nullable final List<Sha256Hash> filteredTxHashList,
+                                            @Nullable final Map<Sha256Hash, Transaction> filteredTxn,
                                             final StoredBlock newStoredBlock) throws VerificationException {
         // Notify the listeners of the new block, so the depth and workDone of stored transactions can be updated
         // (in the case of the listener being a wallet). Wallets need to know how deep each transaction is so
         // coinbases aren't used before maturity.
         boolean first = true;
-        Set<Hash> falsePositives = Sets.newHashSet();
+        Set<Sha256Hash> falsePositives = Sets.newHashSet();
         if (filteredTxHashList != null) falsePositives.addAll(filteredTxHashList);
         for (final ListenerRegistration<BlockChainListener> registration : listeners) {
             if (registration.executor == Threading.SAME_THREAD) {
@@ -515,7 +513,7 @@ public abstract class AbstractBlockChain {
                     public void run() {
                         try {
                             // We can't do false-positive handling when executing on another thread
-                            Set<Hash> ignoredFalsePositives = Sets.newHashSet();
+                            Set<Sha256Hash> ignoredFalsePositives = Sets.newHashSet();
                             informListenerForNewTransactions(block, newBlockType, filteredTxHashList, filteredTxn,
                                     newStoredBlock, notFirst, registration.listener, ignoredFalsePositives);
                             if (newBlockType == NewBlockType.BEST_CHAIN)
@@ -536,11 +534,11 @@ public abstract class AbstractBlockChain {
     }
 
     private static void informListenerForNewTransactions(Block block, NewBlockType newBlockType,
-                                                         @Nullable List<Hash> filteredTxHashList,
-                                                         @Nullable Map<Hash, Transaction> filteredTxn,
+                                                         @Nullable List<Sha256Hash> filteredTxHashList,
+                                                         @Nullable Map<Sha256Hash, Transaction> filteredTxn,
                                                          StoredBlock newStoredBlock, boolean first,
                                                          BlockChainListener listener,
-                                                         Set<Hash> falsePositives) throws VerificationException {
+                                                         Set<Sha256Hash> falsePositives) throws VerificationException {
         if (block.transactions != null) {
             // If this is not the first wallet, ask for the transactions to be duplicated before being given
             // to the wallet when relevant. This ensures that if we have two connected wallets and a tx that
@@ -555,7 +553,7 @@ public abstract class AbstractBlockChain {
             // set of hashes and call sendTransactionsToListener with individual txn when they have not already been
             // seen in loose broadcasts - otherwise notifyTransactionIsInBlock on the hash.
             int relativityOffset = 0;
-            for (Hash hash : filteredTxHashList) {
+            for (Sha256Hash hash : filteredTxHashList) {
                 Transaction tx = filteredTxn.get(hash);
                 if (tx != null) {
                     sendTransactionsToListener(newStoredBlock, newBlockType, listener, relativityOffset,
@@ -730,7 +728,7 @@ public abstract class AbstractBlockChain {
                                                    int relativityOffset,
                                                    List<Transaction> transactions,
                                                    boolean clone,
-                                                   Set<Hash> falsePositives) throws VerificationException {
+                                                   Set<Sha256Hash> falsePositives) throws VerificationException {
         for (Transaction tx : transactions) {
             try {
                 if (listener.isTransactionRelevant(tx)) {
@@ -841,7 +839,7 @@ public abstract class AbstractBlockChain {
      * @return from or one of froms parents, or null if "from" does not identify an orphan block
      */
     @Nullable
-    public Block getOrphanRoot(Hash from) {
+    public Block getOrphanRoot(Sha256Hash from) {
         lock.lock();
         try {
             OrphanBlock cursor = orphanBlocks.get(from);
@@ -858,7 +856,7 @@ public abstract class AbstractBlockChain {
     }
 
     /** Returns true if the given block is currently in the orphan blocks list. */
-    public boolean isOrphan(Hash block) {
+    public boolean isOrphan(Sha256Hash block) {
         lock.lock();
         try {
             return orphanBlocks.containsKey(block);

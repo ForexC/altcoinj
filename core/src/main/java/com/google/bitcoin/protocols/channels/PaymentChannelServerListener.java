@@ -18,7 +18,7 @@
 package com.google.bitcoin.protocols.channels;
 
 import com.google.bitcoin.core.Coin;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.TransactionBroadcaster;
 import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.net.NioServer;
@@ -77,7 +77,7 @@ public class PaymentChannelServerListener {
                     socketProtobufHandler.closeConnection();
                 }
 
-                @Override public void channelOpen(Hash contractHash) {
+                @Override public void channelOpen(Sha256Hash contractHash) {
                     socketProtobufHandler.setSocketTimeout(0);
                     eventHandler.channelOpen(contractHash);
                 }

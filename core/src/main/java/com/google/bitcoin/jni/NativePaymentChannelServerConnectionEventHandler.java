@@ -13,7 +13,7 @@ public class NativePaymentChannelServerConnectionEventHandler extends ServerConn
     public long ptr;
 
     @Override
-    public native void channelOpen(Hash channelId);
+    public native void channelOpen(Sha256Hash channelId);
 
     @Override
     public native void paymentIncrease(Coin by, Coin to);

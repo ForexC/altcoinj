@@ -60,7 +60,7 @@ import static com.google.common.base.Preconditions.*;
  * exception will be thrown at this point. Once this is done, call
  * {@link PaymentChannelClientState#getIncompleteRefundTransaction()} and pass the resultant transaction through to the
  * server. Once you have retrieved the signature, use {@link PaymentChannelClientState#provideRefundSignature(byte[])}.
- * You must then call {@link PaymentChannelClientState#storeChannelInWallet(com.google.bitcoin.core.Hash)} to store the refund transaction
+ * You must then call {@link PaymentChannelClientState#storeChannelInWallet(com.google.bitcoin.core.Sha256Hash)} to store the refund transaction
  * in the wallet, protecting you against a malicious server attempting to destroy all your coins. At this point, you can
  * provide the server with the multi-sig contract (via {@link PaymentChannelClientState#getMultisigContract()}) safely.
  * </p>
@@ -435,7 +435,7 @@ public class PaymentChannelClientState {
      * Sets this channel's state in {@link StoredPaymentChannelClientStates} to unopened so this channel can be reopened
      * later.
      *
-     * @see PaymentChannelClientState#storeChannelInWallet(com.google.bitcoin.core.Hash)
+     * @see PaymentChannelClientState#storeChannelInWallet(com.google.bitcoin.core.Sha256Hash)
      */
     public synchronized void disconnectFromChannel() {
         if (storedChannel == null)
@@ -457,7 +457,7 @@ public class PaymentChannelClientState {
         state = State.PROVIDE_MULTISIG_CONTRACT_TO_SERVER;
     }
 
-    @VisibleForTesting synchronized void doStoreChannelInWallet(Hash id) {
+    @VisibleForTesting synchronized void doStoreChannelInWallet(Sha256Hash id) {
         StoredPaymentChannelClientStates channels = (StoredPaymentChannelClientStates)
                 wallet.getExtensions().get(StoredPaymentChannelClientStates.EXTENSION_ID);
         checkNotNull(channels, "You have not added the StoredPaymentChannelClientStates extension to the wallet.");
@@ -479,7 +479,7 @@ public class PaymentChannelClientState {
      * @param id A hash providing this channel with an id which uniquely identifies this server. It does not have to be
      *           unique.
      */
-    public synchronized void storeChannelInWallet(Hash id) {
+    public synchronized void storeChannelInWallet(Sha256Hash id) {
         checkState(state == State.SAVE_STATE_IN_WALLET && id != null);
         if (storedChannel != null) {
             checkState(storedChannel.id.equals(id));

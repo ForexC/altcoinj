@@ -378,7 +378,7 @@ public abstract class Message implements Serializable {
      * This method is a NOP for all classes except Block and Transaction.  It is only declared in Message
      * so BitcoinSerializer can avoid 2 instanceof checks + a casting.
      */
-    public Hash getHash() {
+    public Sha256Hash getHash() {
         throw new UnsupportedOperationException();
     }
 
@@ -407,7 +407,7 @@ public abstract class Message implements Serializable {
         }
     }
 
-    Hash readHash() throws ProtocolException {
+    Sha256Hash readHash() throws ProtocolException {
         try {
             byte[] hash = new byte[32];
             System.arraycopy(payload, cursor, hash, 0, 32);
@@ -415,7 +415,7 @@ public abstract class Message implements Serializable {
             // Not the most efficient way to do this but the clearest.
             hash = Utils.reverseBytes(hash);
             cursor += 32;
-            return new Hash(hash);
+            return new Sha256Hash(hash);
         } catch (IndexOutOfBoundsException e) {
             throw new ProtocolException(e);
         }

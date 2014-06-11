@@ -122,13 +122,13 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     //           to the user in the UI, etc). A transaction can leave dead and move into spent/unspent if there is a
     //           re-org to a chain that doesn't include the double spend.
 
-    @VisibleForTesting final Map<Hash, Transaction> pending;
-    @VisibleForTesting final Map<Hash, Transaction> unspent;
-    @VisibleForTesting final Map<Hash, Transaction> spent;
-    @VisibleForTesting final Map<Hash, Transaction> dead;
+    @VisibleForTesting final Map<Sha256Hash, Transaction> pending;
+    @VisibleForTesting final Map<Sha256Hash, Transaction> unspent;
+    @VisibleForTesting final Map<Sha256Hash, Transaction> spent;
+    @VisibleForTesting final Map<Sha256Hash, Transaction> dead;
 
     // All transactions together.
-    protected final Map<Hash, Transaction> transactions;
+    protected final Map<Sha256Hash, Transaction> transactions;
 
     // Transactions that were dropped by the risk analysis system. These are not in any pools and not serialized
     // to disk. We have to keep them around because if we ignore a tx because we think it will never confirm, but
@@ -137,9 +137,9 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     // (so it would be wasteful to repeat). Thus we keep them around here for a while. If we drop our network
     // connections then the remote peers will forget that we were sent the tx data previously and send it again
     // when relaying a filtered merkleblock.
-    private final LinkedHashMap<Hash, Transaction> riskDropped = new LinkedHashMap<Hash, Transaction>() {
+    private final LinkedHashMap<Sha256Hash, Transaction> riskDropped = new LinkedHashMap<Sha256Hash, Transaction>() {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Hash, Transaction> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<Sha256Hash, Transaction> eldest) {
             return size() > 1000;
         }
     };
@@ -153,7 +153,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
     protected final NetworkParameters params;
 
-    @Nullable private Hash lastBlockSeenHash;
+    @Nullable private Sha256Hash lastBlockSeenHash;
     private int lastBlockSeenHeight;
     private long lastBlockSeenTimeSecs;
 
@@ -166,7 +166,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     // If a TX hash appears in this set then notifyNewBestBlock will ignore it, as its confidence was already set up
     // in receive() via Transaction.setBlockAppearance(). As the BlockChain always calls notifyNewBestBlock even if
     // it sent transactions to the wallet, without this we'd double count.
-    private transient HashSet<Hash> ignoreNextNewBlock;
+    private transient HashSet<Sha256Hash> ignoreNextNewBlock;
     // Whether or not to ignore nLockTime > 0 transactions that are received to the mempool.
     private boolean acceptRiskyTransactions;
 
@@ -227,11 +227,11 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         if (params == UnitTestParams.get())
             this.keychain.setLookaheadSize(5);  // Cut down excess computation for unit tests.
         watchedScripts = Sets.newHashSet();
-        unspent = new HashMap<Hash, Transaction>();
-        spent = new HashMap<Hash, Transaction>();
-        pending = new HashMap<Hash, Transaction>();
-        dead = new HashMap<Hash, Transaction>();
-        transactions = new HashMap<Hash, Transaction>();
+        unspent = new HashMap<Sha256Hash, Transaction>();
+        spent = new HashMap<Sha256Hash, Transaction>();
+        pending = new HashMap<Sha256Hash, Transaction>();
+        dead = new HashMap<Sha256Hash, Transaction>();
+        transactions = new HashMap<Sha256Hash, Transaction>();
         eventListeners = new CopyOnWriteArrayList<ListenerRegistration<WalletEventListener>>();
         extensions = new HashMap<String, WalletExtension>();
         // Use a linked hash map to ensure ordering of event listeners is correct.
@@ -240,7 +240,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     }
 
     private void createTransientState() {
-        ignoreNextNewBlock = new HashSet<Hash>();
+        ignoreNextNewBlock = new HashSet<Sha256Hash>();
         txConfidenceListener = new TransactionConfidence.Listener() {
             @Override
             public void onConfidenceChanged(Transaction tx, TransactionConfidence.Listener.ChangeReason reason) {
@@ -973,7 +973,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
             boolean success = true;
             Set<Transaction> transactions = getTransactions(true);
 
-            Set<Hash> hashes = new HashSet<Hash>();
+            Set<Sha256Hash> hashes = new HashSet<Sha256Hash>();
             for (Transaction tx : transactions) {
                 hashes.add(tx.getHash());
             }
@@ -1053,7 +1053,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
      * block might change which chain is best causing a reorganize. A re-org can totally change our balance!
      */
     @Override
-    public boolean notifyTransactionIsInBlock(Hash txHash, StoredBlock block,
+    public boolean notifyTransactionIsInBlock(Sha256Hash txHash, StoredBlock block,
                                            BlockChain.NewBlockType blockType,
                                            int relativityOffset) throws VerificationException {
         lock.lock();
@@ -1298,7 +1298,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         // Runs in a peer thread.
         checkState(lock.isHeldByCurrentThread());
         Coin prevBalance = getBalance();
-        Hash txHash = tx.getHash();
+        Sha256Hash txHash = tx.getHash();
         boolean bestChain = blockType == BlockChain.NewBlockType.BEST_CHAIN;
         boolean sideChain = blockType == BlockChain.NewBlockType.SIDE_CHAIN;
 
@@ -1350,7 +1350,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
             } else {
                 // Ignore the case where a tx appears on a side chain at the same time as the best chain (this is
                 // quite normal and expected).
-                Hash hash = tx.getHash();
+                Sha256Hash hash = tx.getHash();
                 if (!unspent.containsKey(hash) && !spent.containsKey(hash)) {
                     // Otherwise put it (possibly back) into pending.
                     // Committing it updates the spent flags and inserts into the pool as well.
@@ -1432,7 +1432,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
     @Override
     public void notifyNewBestBlock(StoredBlock block) throws VerificationException {
         // Check to see if this block has been seen before.
-        Hash newBlockHash = block.getHeader().getHash();
+        Sha256Hash newBlockHash = block.getHeader().getHash();
         if (newBlockHash.equals(getLastBlockSeenHash()))
             return;
         lock.lock();
@@ -1907,7 +1907,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
      * Returns a transaction object given its hash, if it exists in this wallet, or null otherwise.
      */
     @Nullable
-    public Transaction getTransaction(Hash hash) {
+    public Transaction getTransaction(Sha256Hash hash) {
         lock.lock();
         try {
             return transactions.get(hash);
@@ -1977,7 +1977,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         lock.lock();
         try {
             EnumSet<Pool> result = EnumSet.noneOf(Pool.class);
-            Hash txHash = tx.getHash();
+            Sha256Hash txHash = tx.getHash();
             if (unspent.containsKey(txHash)) {
                 result.add(Pool.UNSPENT);
             }
@@ -2706,7 +2706,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         }
     }
 
-    private void toStringHelper(StringBuilder builder, Map<Hash, Transaction> transactionMap,
+    private void toStringHelper(StringBuilder builder, Map<Sha256Hash, Transaction> transactionMap,
                                 @Nullable AbstractBlockChain chain, @Nullable Comparator<Transaction> sortOrder) {
         checkState(lock.isHeldByCurrentThread());
 
@@ -2783,17 +2783,17 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
             // Map block hash to transactions that appear in it. We ensure that the map values are sorted according
             // to their relative position within those blocks.
-            ArrayListMultimap<Hash, TxOffsetPair> mapBlockTx = ArrayListMultimap.create();
+            ArrayListMultimap<Sha256Hash, TxOffsetPair> mapBlockTx = ArrayListMultimap.create();
             for (Transaction tx : getTransactions(true)) {
-                Map<Hash, Integer> appearsIn = tx.getAppearsInHashes();
+                Map<Sha256Hash, Integer> appearsIn = tx.getAppearsInHashes();
                 if (appearsIn == null) continue;  // Pending.
-                for (Map.Entry<Hash, Integer> block : appearsIn.entrySet())
+                for (Map.Entry<Sha256Hash, Integer> block : appearsIn.entrySet())
                     mapBlockTx.put(block.getKey(), new TxOffsetPair(tx, block.getValue()));
             }
-            for (Hash blockHash : mapBlockTx.keySet())
+            for (Sha256Hash blockHash : mapBlockTx.keySet())
                 Collections.sort(mapBlockTx.get(blockHash));
 
-            List<Hash> oldBlockHashes = new ArrayList<Hash>(oldBlocks.size());
+            List<Sha256Hash> oldBlockHashes = new ArrayList<Sha256Hash>(oldBlocks.size());
             log.info("Old part of chain (top to bottom):");
             for (StoredBlock b : oldBlocks) {
                 log.info("  {}", b.getHeader().getHashAsString());
@@ -2808,10 +2808,10 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
             // For each block in the old chain, disconnect the transactions in reverse order.
             LinkedList<Transaction> oldChainTxns = Lists.newLinkedList();
-            for (Hash blockHash : oldBlockHashes) {
+            for (Sha256Hash blockHash : oldBlockHashes) {
                 for (TxOffsetPair pair : mapBlockTx.get(blockHash)) {
                     Transaction tx = pair.tx;
-                    final Hash txHash = tx.getHash();
+                    final Sha256Hash txHash = tx.getHash();
                     if (tx.isCoinBase()) {
                         // All the transactions that we have in our wallet which spent this coinbase are now invalid
                         // and will never confirm. Hopefully this should never happen - that's the point of the maturity
@@ -2959,7 +2959,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
     /** Returns the hash of the last seen best-chain block, or null if the wallet is too old to store this data. */
     @Nullable
-    public Hash getLastBlockSeenHash() {
+    public Sha256Hash getLastBlockSeenHash() {
         lock.lock();
         try {
             return lastBlockSeenHash;
@@ -2968,7 +2968,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         }
     }
 
-    public void setLastBlockSeenHash(@Nullable Hash lastBlockSeenHash) {
+    public void setLastBlockSeenHash(@Nullable Sha256Hash lastBlockSeenHash) {
         lock.lock();
         try {
             this.lastBlockSeenHash = lastBlockSeenHash;

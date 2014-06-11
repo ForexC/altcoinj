@@ -158,7 +158,7 @@ public class TransactionInput extends ChildMessage implements Serializable {
      */
     public boolean isCoinBase() {
         maybeParse();
-        return outpoint.getHash().equals(Hash.ZERO_HASH) &&
+        return outpoint.getHash().equals(Sha256Hash.ZERO_HASH) &&
                 (outpoint.getIndex() & 0xFFFFFFFFL) == 0xFFFFFFFFL;  // -1 but all is serialized to the wire as unsigned int.
     }
 
@@ -300,7 +300,7 @@ public class TransactionInput extends ChildMessage implements Serializable {
      * @return The TransactionOutput or null if the transactions map doesn't contain the referenced tx.
      */
     @Nullable
-    TransactionOutput getConnectedOutput(Map<Hash, Transaction> transactions) {
+    TransactionOutput getConnectedOutput(Map<Sha256Hash, Transaction> transactions) {
         Transaction tx = transactions.get(outpoint.getHash());
         if (tx == null)
             return null;
@@ -321,7 +321,7 @@ public class TransactionInput extends ChildMessage implements Serializable {
      * @param mode   Whether to abort if there's a pre-existing connection or not.
      * @return NO_SUCH_TX if the prevtx wasn't found, ALREADY_SPENT if there was a conflict, SUCCESS if not.
      */
-    public ConnectionResult connect(Map<Hash, Transaction> transactions, ConnectMode mode) {
+    public ConnectionResult connect(Map<Sha256Hash, Transaction> transactions, ConnectMode mode) {
         Transaction tx = transactions.get(outpoint.getHash());
         if (tx == null) {
             return TransactionInput.ConnectionResult.NO_SUCH_TX;

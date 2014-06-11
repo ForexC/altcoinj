@@ -18,7 +18,7 @@
 package com.google.bitcoin.crypto;
 
 import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import org.junit.Test;
 import org.spongycastle.crypto.params.KeyParameter;
 
@@ -144,7 +144,7 @@ public class ChildKeyDerivationTest {
         assertFalse(decryptedKey2.isEncrypted());
         assertEquals(key2, decryptedKey2);
 
-        Hash hash = Hash.create("the mainstream media won't cover it. why is that?".getBytes());
+        Sha256Hash hash = Sha256Hash.create("the mainstream media won't cover it. why is that?".getBytes());
         try {
             derivedKey2.sign(hash);
             fail();

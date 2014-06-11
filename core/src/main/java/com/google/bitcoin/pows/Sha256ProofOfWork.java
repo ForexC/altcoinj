@@ -2,12 +2,12 @@ package com.google.bitcoin.pows;
 
 import static com.google.bitcoin.core.Utils.reverseBytes;
 import static com.google.bitcoin.core.Utils.doubleDigest;
-import com.google.bitcoin.core.Hash;
+import com.google.bitcoin.core.Sha256Hash;
 import com.google.bitcoin.core.ProofOfWork;
 
 public class Sha256ProofOfWork extends ProofOfWork {
-    protected Hash hash(byte[] header) {
-        return new Hash(reverseBytes(doubleDigest(header)));
+    protected Sha256Hash hash(byte[] header) {
+        return new Sha256Hash(reverseBytes(doubleDigest(header)));
     }
 
     private static Sha256ProofOfWork instance;

@@ -141,8 +141,8 @@ public class BlockChainTest {
         Block b1 = createFakeBlock(blockStore, tx1).block;
         chain.add(b1);
         resetBlockStore();
-        Hash hash = b1.getMerkleRoot();
-        b1.setMerkleRoot(Hash.ZERO_HASH);
+        Sha256Hash hash = b1.getMerkleRoot();
+        b1.setMerkleRoot(Sha256Hash.ZERO_HASH);
         try {
             chain.add(b1);
             fail();
@@ -155,7 +155,7 @@ public class BlockChainTest {
                                        new ECKey().toAddress(unitTestParams));
         Block b2 = createFakeBlock(blockStore, tx2).block;
         b2.getMerkleRoot();
-        b2.setMerkleRoot(Hash.ZERO_HASH);
+        b2.setMerkleRoot(Sha256Hash.ZERO_HASH);
         b2.solve();
         chain.add(b2);  // Broken block is accepted because its contents don't matter to us.
     }
@@ -210,7 +210,7 @@ public class BlockChainTest {
         assertTrue(testNetChain.add(b2));
         Block bad = new Block(testNet);
         // Merkle root can be anything here, doesn't matter.
-        bad.setMerkleRoot(new Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
+        bad.setMerkleRoot(new Sha256Hash("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"));
         // Nonce was just some number that made the hash < difficulty limit set below, it can be anything.
         bad.setNonce(140548933);
         bad.setTime(1279242649);
@@ -369,10 +369,10 @@ public class BlockChainTest {
     // Some blocks from the test net.
     private static Block getBlock2() throws Exception {
         Block b2 = new Block(testNet);
-        b2.setMerkleRoot(new Hash("addc858a17e21e68350f968ccd384d6439b64aafa6c193c8b9dd66320470838b"));
+        b2.setMerkleRoot(new Sha256Hash("addc858a17e21e68350f968ccd384d6439b64aafa6c193c8b9dd66320470838b"));
         b2.setNonce(2642058077L);
         b2.setTime(1296734343L);
-        b2.setPrevBlockHash(new Hash("000000033cc282bc1fa9dcae7a533263fd7fe66490f550d80076433340831604"));
+        b2.setPrevBlockHash(new Sha256Hash("000000033cc282bc1fa9dcae7a533263fd7fe66490f550d80076433340831604"));
         assertEquals("000000037b21cac5d30fc6fda2581cf7b2612908aed2abbcc429c45b0557a15f", b2.getHashAsString());
         b2.verifyHeader();
         return b2;
@@ -380,10 +380,10 @@ public class BlockChainTest {
 
     private static Block getBlock1() throws Exception {
         Block b1 = new Block(testNet);
-        b1.setMerkleRoot(new Hash("0e8e58ecdacaa7b3c6304a35ae4ffff964816d2b80b62b58558866ce4e648c10"));
+        b1.setMerkleRoot(new Sha256Hash("0e8e58ecdacaa7b3c6304a35ae4ffff964816d2b80b62b58558866ce4e648c10"));
         b1.setNonce(236038445);
         b1.setTime(1296734340);
-        b1.setPrevBlockHash(new Hash("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
+        b1.setPrevBlockHash(new Sha256Hash("00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008"));
         assertEquals("000000033cc282bc1fa9dcae7a533263fd7fe66490f550d80076433340831604", b1.getHashAsString());
         b1.verifyHeader();
         return b1;

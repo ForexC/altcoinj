@@ -267,7 +267,7 @@ public class PeerGroupTest extends TestWithPeerGroup {
         peerGroup.startBlockChainDownload(new AbstractPeerEventListener() {
         });
         GetBlocksMessage getblocks = (GetBlocksMessage) outbound(p1);
-        assertEquals(Hash.ZERO_HASH, getblocks.getStopHash());
+        assertEquals(Sha256Hash.ZERO_HASH, getblocks.getStopHash());
         // We give back an inv with some blocks in it.
         InventoryMessage inv = new InventoryMessage(params);
         inv.addBlock(b1);
@@ -554,7 +554,7 @@ public class PeerGroupTest extends TestWithPeerGroup {
         inbound(p1, tx);
         // p1 requests dep resolution, p2 is quiet.
         assertTrue(outbound(p1) instanceof GetDataMessage);
-        final Hash dephash = tx.getInput(0).getOutpoint().getHash();
+        final Sha256Hash dephash = tx.getInput(0).getOutpoint().getHash();
         final InventoryItem inv = new InventoryItem(InventoryItem.Type.Transaction, dephash);
         inbound(p1, new NotFoundMessage(params, ImmutableList.of(inv)));
         assertNull(outbound(p1));

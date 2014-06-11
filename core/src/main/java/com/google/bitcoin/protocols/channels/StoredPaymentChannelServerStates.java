@@ -38,7 +38,7 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
 
     static final String EXTENSION_ID = StoredPaymentChannelServerStates.class.getName();
 
-    @GuardedBy("lock") @VisibleForTesting final Map<Hash, StoredServerChannel> mapChannels = new HashMap<Hash, StoredServerChannel>();
+    @GuardedBy("lock") @VisibleForTesting final Map<Sha256Hash, StoredServerChannel> mapChannels = new HashMap<Sha256Hash, StoredServerChannel>();
     private Wallet wallet;
     private final TransactionBroadcaster broadcaster;
 
@@ -97,7 +97,7 @@ public class StoredPaymentChannelServerStates implements WalletExtension {
     /**
      * Gets the {@link StoredServerChannel} with the given channel id (ie contract transaction hash).
      */
-    public StoredServerChannel getChannel(Hash id) {
+    public StoredServerChannel getChannel(Sha256Hash id) {
         lock.lock();
         try {
             return mapChannels.get(id);

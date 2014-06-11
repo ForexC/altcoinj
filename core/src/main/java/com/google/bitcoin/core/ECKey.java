@@ -543,7 +543,7 @@ public class ECKey implements EncryptableItem, Serializable {
      * further EC maths on them.
      * @throws KeyCrypterException if this ECKey doesn't have a private part.
      */
-    public ECDSASignature sign(Hash input) throws KeyCrypterException {
+    public ECDSASignature sign(Sha256Hash input) throws KeyCrypterException {
         return sign(input, null);
     }
 
@@ -564,7 +564,7 @@ public class ECKey implements EncryptableItem, Serializable {
      * @param aesKey The AES key to use for decryption of the private key. If null then no decryption is required.
      * @throws KeyCrypterException if this ECKey doesn't have a private part.
      */
-    public ECDSASignature sign(Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
+    public ECDSASignature sign(Sha256Hash input, @Nullable KeyParameter aesKey) throws KeyCrypterException {
         KeyCrypter crypter = getKeyCrypter();
         if (crypter != null) {
             if (aesKey == null)
@@ -578,7 +578,7 @@ public class ECKey implements EncryptableItem, Serializable {
         return doSign(input, priv);
     }
 
-    protected ECDSASignature doSign(Hash input, BigInteger privateKeyForSigning) {
+    protected ECDSASignature doSign(Sha256Hash input, BigInteger privateKeyForSigning) {
         if (FAKE_SIGNATURES)
             return TransactionSignature.dummy();
         checkNotNull(privateKeyForSigning);
@@ -595,7 +595,7 @@ public class ECKey implements EncryptableItem, Serializable {
      * <p>When using native ECDSA verification, data must be 32 bytes, and no element may be
      * larger than 520 bytes.</p>
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      * @param pub       The public key bytes to use.
      */
@@ -623,7 +623,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /**
      * Verifies the given ASN.1 encoded ECDSA signature against a hash using the public key.
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      * @param pub       The public key bytes to use.
      */
@@ -636,7 +636,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /**
      * Verifies the given ASN.1 encoded ECDSA signature against a hash using the public key.
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      */
     public boolean verify(byte[] data, byte[] signature) {
@@ -646,7 +646,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /**
      * Verifies the given R/S pair (signature) against a hash using the public key.
      */
-    public boolean verify(Hash sigHash, ECDSASignature signature) {
+    public boolean verify(Sha256Hash sigHash, ECDSASignature signature) {
         return ECKey.verify(sigHash.getBytes(), signature, getPubKey());
     }
 
@@ -726,7 +726,7 @@ public class ECKey implements EncryptableItem, Serializable {
         if (priv == null)
             throw new MissingPrivateKeyException();
         byte[] data = Utils.formatMessageForSigning(message);
-        Hash hash = Hash.createDouble(data);
+        Sha256Hash hash = Sha256Hash.createDouble(data);
         ECDSASignature sig = sign(hash, aesKey);
         // Now we have to work backwards to figure out the recId needed to recover the signature.
         int recId = -1;
@@ -780,7 +780,7 @@ public class ECKey implements EncryptableItem, Serializable {
         byte[] messageBytes = Utils.formatMessageForSigning(message);
         // Note that the C++ code doesn't actually seem to specify any character encoding. Presumably it's whatever
         // JSON-SPIRIT hands back. Assume UTF-8 for now.
-        Hash messageHash = Hash.createDouble(messageBytes);
+        Sha256Hash messageHash = Sha256Hash.createDouble(messageBytes);
         boolean compressed = false;
         if (header >= 31) {
             compressed = true;
@@ -819,12 +819,12 @@ public class ECKey implements EncryptableItem, Serializable {
      *
      * @param recId Which possible key to recover.
      * @param sig the R and S components of the signature, wrapped.
-     * @param message Hash of the data that was signed.
+     * @param message Sha256Hash of the data that was signed.
      * @param compressed Whether or not the original pubkey was compressed.
      * @return An ECKey containing only the public part, or null if recovery wasn't possible.
      */
     @Nullable
-    public static ECKey recoverFromSignature(int recId, ECDSASignature sig, Hash message, boolean compressed) {
+    public static ECKey recoverFromSignature(int recId, ECDSASignature sig, Sha256Hash message, boolean compressed) {
         Preconditions.checkArgument(recId >= 0, "recId must be positive");
         Preconditions.checkArgument(sig.r.signum() >= 0, "r must be positive");
         Preconditions.checkArgument(sig.s.signum() >= 0, "s must be positive");

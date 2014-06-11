@@ -168,7 +168,7 @@ public class WalletProtobufSerializerTest {
 
         // Create a block.
         Block block = new Block(params, BlockTest.blockBytes);
-        Hash blockHash = block.getHash();
+        Sha256Hash blockHash = block.getHash();
         wallet.setLastBlockSeenHash(blockHash);
         wallet.setLastBlockSeenHeight(1);
 
