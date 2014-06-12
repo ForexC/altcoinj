@@ -346,13 +346,9 @@ public class FullPrunedBlockChain extends AbstractBlockChain {
                     }
                     // All values were already checked for being non-negative (as it is verified in Transaction.verify())
                     // but we check again here just for defence in depth. Transactions with zero output value are OK.
-<<<<<<< HEAD
                     if (valueOut.signum() < 0 || params.maxMoney != null && valueOut.compareTo(params.maxMoney) > 0)
                         throw new VerificationException("Transaction output value out of rage");
-=======
-                    if (valueOut.signum() < 0 || valueOut.compareTo(NetworkParameters.MAX_MONEY) > 0)
-                        throw new VerificationException("Transaction output value out of range");
->>>>>>> a690454be179a8b6e500593f5c5ffc66e41fd117
+
                     if (isCoinBase) {
                         coinbaseValue = valueOut;
                     } else {
