@@ -40,6 +40,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.subgraph.orchid.TorClient;
 import joptsimple.OptionParser;
@@ -53,10 +54,7 @@ import org.spongycastle.crypto.params.KeyParameter;
 import org.spongycastle.util.encoders.Hex;
 
 import javax.annotation.Nullable;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -83,6 +81,7 @@ public class WalletTool {
     private static OptionSpec<Date> dateFlag;
     private static OptionSpec<Integer> unixtimeFlag;
     private static OptionSpec<String> seedFlag, watchFlag;
+    private static OptionSpec<String> xpubkeysFlag;
 
     private static NetworkParameters params;
     private static File walletFile;
@@ -165,6 +164,8 @@ public class WalletTool {
         SEND,
         ENCRYPT,
         DECRYPT,
+        MARRY,
+        ROTATE,
     }
 
     public enum WaitForEnum {
@@ -205,6 +206,7 @@ public class WalletTool {
         parser.accepts("privkey").withRequiredArg();
         parser.accepts("addr").withRequiredArg();
         parser.accepts("peers").withRequiredArg();
+        xpubkeysFlag = parser.accepts("xpubkeys").withRequiredArg();
         OptionSpec<String> outputFlag = parser.accepts("output").withRequiredArg();
         parser.accepts("value").withRequiredArg();
         parser.accepts("fee").withRequiredArg();
@@ -301,11 +303,13 @@ public class WalletTool {
             }
         }
 
+        InputStream walletInputStream = null;
         try {
             WalletProtobufSerializer loader = new WalletProtobufSerializer();
             if (options.has("ignore-mandatory-extensions"))
                 loader.setRequireMandatoryExtensions(false);
-            wallet = loader.readWallet(new BufferedInputStream(new FileInputStream(walletFile)));
+            walletInputStream = new BufferedInputStream(new FileInputStream(walletFile));
+            wallet = loader.readWallet(walletInputStream);
             if (!wallet.getParams().equals(params)) {
                 System.err.println("Wallet does not match requested network parameters: " +
                         wallet.getParams().getId() + " vs " + params.getId());
@@ -315,6 +319,10 @@ public class WalletTool {
             System.err.println("Failed to load wallet '" + walletFile + "': " + e.getMessage());
             e.printStackTrace();
             return;
+        } finally {
+            if (walletInputStream != null) {
+                walletInputStream.close();
+            }
         }
 
         // What should we do?
@@ -349,6 +357,8 @@ public class WalletTool {
                 break;
             case ENCRYPT: encrypt(); break;
             case DECRYPT: decrypt(); break;
+            case MARRY: marry(); break;
+            case ROTATE: rotate(); break;
         }
 
         if (!wallet.isConsistent()) {
@@ -375,6 +385,40 @@ public class WalletTool {
             saveWallet(walletFile);
         }
         shutdown();
+    }
+
+    private static void marry() {
+        if (!options.has(xpubkeysFlag)) {
+            throw new IllegalStateException();
+        }
+
+        String[] xpubkeys = options.valueOf(xpubkeysFlag).split(",");
+        ImmutableList.Builder<DeterministicKey> keys = ImmutableList.builder();
+        for (String xpubkey : xpubkeys) {
+            keys.add(DeterministicKey.deserializeB58(null, xpubkey.trim()));
+        }
+        wallet.addFollowingAccountKeys(keys.build());
+    }
+
+    private static void rotate() throws BlockStoreException {
+        setup();
+        peers.startAsync();
+        peers.awaitRunning();
+        // Set a key rotation time and possibly broadcast the resulting maintenance transactions.
+        long rotationTimeSecs = Utils.currentTimeSeconds();
+        if (options.has(dateFlag)) {
+            rotationTimeSecs = options.valueOf(dateFlag).getTime() / 1000;
+        }
+        log.info("Setting wallet key rotation time to {}", rotationTimeSecs);
+        wallet.setKeyRotationEnabled(true);
+        wallet.setKeyRotationTime(rotationTimeSecs);
+        KeyParameter aesKey = null;
+        if (wallet.isEncrypted()) {
+            aesKey = passwordToKey(true);
+            if (aesKey == null)
+                return;
+        }
+        Futures.getUnchecked(wallet.maybeDoMaintenance(aesKey, true));
     }
 
     private static void encrypt() {
