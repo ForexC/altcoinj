@@ -56,8 +56,8 @@ public class KeyChainGroupTest {
     }
 
     private KeyChainGroup createMarriedKeyChainGroup() {
-        byte[] seedBytes = Sha256Hash.create("don't use a seed like this in real life".getBytes()).getBytes();
-        DeterministicSeed seed = new DeterministicSeed(seedBytes, MnemonicCode.BIP39_STANDARDISATION_TIME_SECS);
+        byte[] entropy = Sha256Hash.create("don't use a seed like this in real life".getBytes()).getBytes();
+        DeterministicSeed seed = new DeterministicSeed(entropy, "", MnemonicCode.BIP39_STANDARDISATION_TIME_SECS);
         KeyChainGroup group = new KeyChainGroup(params, seed, ImmutableList.of(watchingAccountKey));
         group.setLookaheadSize(LOOKAHEAD_SIZE);
         group.getActiveKeyChain();
@@ -505,7 +505,7 @@ public class KeyChainGroupTest {
 
         // Check we used the right (oldest) key despite backwards import order.
         byte[] truncatedBytes = Arrays.copyOfRange(key1.getSecretBytes(), 0, 16);
-        assertArrayEquals(seed1.getSecretBytes(), truncatedBytes);
+        assertArrayEquals(seed1.getEntropyBytes(), truncatedBytes);
     }
 
     @Test
@@ -524,7 +524,7 @@ public class KeyChainGroupTest {
         assertNotNull(seed);
         // Check we used the right key: oldest non rotating.
         byte[] truncatedBytes = Arrays.copyOfRange(key2.getSecretBytes(), 0, 16);
-        assertArrayEquals(seed.getSecretBytes(), truncatedBytes);
+        assertArrayEquals(seed.getEntropyBytes(), truncatedBytes);
     }
 
     @Test
@@ -548,9 +548,9 @@ public class KeyChainGroupTest {
         final DeterministicSeed deterministicSeed = group.getActiveKeyChain().getSeed();
         assertNotNull(deterministicSeed);
         assertTrue(deterministicSeed.isEncrypted());
-        byte[] seed = checkNotNull(group.getActiveKeyChain().toDecrypted(aesKey).getSeed()).getSecretBytes();
+        byte[] entropy = checkNotNull(group.getActiveKeyChain().toDecrypted(aesKey).getSeed()).getEntropyBytes();
         // Check we used the right key: oldest non rotating.
         byte[] truncatedBytes = Arrays.copyOfRange(key.getSecretBytes(), 0, 16);
-        assertArrayEquals(seed, truncatedBytes);
+        assertArrayEquals(entropy, truncatedBytes);
     }
 }
