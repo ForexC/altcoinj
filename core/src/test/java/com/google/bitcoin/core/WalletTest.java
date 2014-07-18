@@ -1189,6 +1189,15 @@ public class WalletTest extends TestWithWallet {
     }
 
     @Test
+    public void getWatchedAddresses() throws Exception {
+        Address watchedAddress = new ECKey().toAddress(params);
+        wallet.addWatchedAddress(watchedAddress);
+        List<Address> watchedAddresses = wallet.getWatchedAddresses();
+        assertEquals(1, watchedAddresses.size());
+        assertEquals(watchedAddress, watchedAddresses.get(0));
+    }
+
+    @Test
     public void marriedKeychainBloomFilter() throws Exception {
         wallet = new Wallet(params);
         blockStore = new MemoryBlockStore(params);
@@ -2444,7 +2453,7 @@ public class WalletTest extends TestWithWallet {
             }
         }, Threading.SAME_THREAD);
         wallet.freshReceiveKey();
-        assertEquals(6, keys.size());
+        assertEquals(7, keys.size());
     }
 
     @Test
