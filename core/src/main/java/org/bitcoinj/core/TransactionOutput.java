@@ -112,7 +112,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
         // Negative values obviously make no sense, except for -1 which is used as a sentinel value when calculating
         // SIGHASH_SINGLE signatures, so unfortunately we have to allow that here.
         checkArgument(value.signum() >= 0 || value.equals(Coin.NEGATIVE_SATOSHI), "Negative values not allowed");
-        checkArgument(value.compareTo(NetworkParameters.MAX_MONEY) < 0, "Values larger than MAX_MONEY not allowed");
+        checkArgument(params.getMaxMoney() == null || value.compareTo(params.getMaxMoney()) < 0, "Values larger than MAX_MONEY not allowed");
         this.value = value.value;
         this.scriptBytes = scriptBytes;
         setParent(parent);
@@ -135,7 +135,7 @@ public class TransactionOutput extends ChildMessage implements Serializable {
     }
 
     /**
-     * <p>If the output script pays to an address as in <a href="https://bitcoin.org/en/developer-guide#term-p2pkh">
+     * <p>If the output script pays to an address as in <a href="https://bitcoinj.org/en/developer-guide#term-p2pkh">
      * P2PKH</a>, return the address of the receiver, i.e., a base58 encoded hash of the public key in the script. </p>
      *
      * @param networkParameters needed to specify an address
@@ -156,8 +156,8 @@ public class TransactionOutput extends ChildMessage implements Serializable {
      * i.e., a base58 encoding of [one-byte version][20-byte hash][4-byte checksum], where the 20-byte hash refers to
      * the redeem script.</p>
      *
-     * <p>P2SH is described by <a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">BIP 16</a> and
-     * <a href="https://bitcoin.org/en/developer-guide#p2sh-scripts">documented in the Bitcoin Developer Guide</a>.</p>
+     * <p>P2SH is described by <a href="https://github.com/bitcoinj/bips/blob/master/bip-0016.mediawiki">BIP 16</a> and
+     * <a href="https://bitcoinj.org/en/developer-guide#p2sh-scripts">documented in the Bitcoin Developer Guide</a>.</p>
      *
      * @param networkParameters needed to specify an address
      * @return null if the output script does not pay to a script hash

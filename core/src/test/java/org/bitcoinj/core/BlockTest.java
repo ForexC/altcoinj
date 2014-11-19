@@ -148,7 +148,7 @@ public class BlockTest {
         Transaction tx2 = (Transaction) ois.readObject();
         ois.close();
 
-        // Note that this will actually check the transactions are equal by doing bitcoin serialization and checking
+        // Note that this will actually check the transactions are equal by doing bitcoinj serialization and checking
         // the bytestreams are the same! A true "deep equals" is not implemented for Transaction. The primary purpose
         // of this test is to ensure no errors occur during the Java serialization/deserialization process.
         assertEquals(tx, tx2);
@@ -167,7 +167,7 @@ public class BlockTest {
         Arrays.fill(outputScript, (byte) ScriptOpCodes.OP_FALSE);
         tx.addOutput(new TransactionOutput(params, null, Coin.SATOSHI, outputScript));
         tx.addInput(new TransactionInput(params, null, new byte[] {(byte) ScriptOpCodes.OP_FALSE},
-                new TransactionOutPoint(params, 0, Sha256Hash.create(new byte[] {1}))));
+                new TransactionOutPoint(params, 0, Sha256Hash.create(new byte[]{1}))));
         int origTxLength = 8 + 2 + 8 + 1 + 10 + 40 + 1 + 1;
         assertEquals(tx.bitcoinSerialize().length, tx.length);
         assertEquals(origTxLength, tx.length);
@@ -182,7 +182,7 @@ public class BlockTest {
         assertEquals(block.length, origBlockLen + tx.length);
         assertEquals(tx.length, origTxLength - 1);
         block.getTransactions().get(1).addInput(new TransactionInput(params, null, new byte[] {(byte) ScriptOpCodes.OP_FALSE},
-                new TransactionOutPoint(params, 0, Sha256Hash.create(new byte[] {1}))));
+                new TransactionOutPoint(params, 0, Sha256Hash.create(new byte[]{1}))));
         assertEquals(block.length, origBlockLen + tx.length);
         assertEquals(tx.length, origTxLength + 41); // - 1 + 40 + 1 + 1
     }

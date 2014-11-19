@@ -1183,7 +1183,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.TwoWayChannelMessage.class, org.bitcoin.paymentchannel.Protos.TwoWayChannelMessage.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.TwoWayChannelMessage.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.TwoWayChannelMessage.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -3223,7 +3223,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.ClientVersion.class, org.bitcoin.paymentchannel.Protos.ClientVersion.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.ClientVersion.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.ClientVersion.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -3863,7 +3863,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.ServerVersion.class, org.bitcoin.paymentchannel.Protos.ServerVersion.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.ServerVersion.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.ServerVersion.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -4574,7 +4574,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.Initiate.class, org.bitcoin.paymentchannel.Protos.Initiate.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.Initiate.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.Initiate.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -5362,7 +5362,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.ProvideRefund.class, org.bitcoin.paymentchannel.Protos.ProvideRefund.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.ProvideRefund.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.ProvideRefund.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -5898,7 +5898,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.ReturnRefund.class, org.bitcoin.paymentchannel.Protos.ReturnRefund.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.ReturnRefund.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.ReturnRefund.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -6456,7 +6456,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.ProvideContract.class, org.bitcoin.paymentchannel.Protos.ProvideContract.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.ProvideContract.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.ProvideContract.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -7283,7 +7283,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.UpdatePayment.class, org.bitcoin.paymentchannel.Protos.UpdatePayment.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.UpdatePayment.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.UpdatePayment.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -7865,7 +7865,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.PaymentAck.class, org.bitcoin.paymentchannel.Protos.PaymentAck.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.PaymentAck.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.PaymentAck.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -8304,7 +8304,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.Settlement.class, org.bitcoin.paymentchannel.Protos.Settlement.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.Settlement.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.Settlement.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -9089,7 +9089,7 @@ public final class Protos {
                 org.bitcoin.paymentchannel.Protos.Error.class, org.bitcoin.paymentchannel.Protos.Error.Builder.class);
       }
 
-      // Construct using org.bitcoin.paymentchannel.Protos.Error.newBuilder()
+      // Construct using org.bitcoinj.paymentchannel.Protos.Error.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -9511,7 +9511,7 @@ public final class Protos {
       "BAD_TRANSACTION\020\004\022\034\n\030TIME_WINDOW_UNACCEP" +
       "TABLE\020\005\022\033\n\027CHANNEL_VALUE_TOO_LARGE\020\006\022\031\n\025" +
       "MIN_PAYMENT_TOO_LARGE\020\007\022\t\n\005OTHER\020\010B$\n\032or" +
-      "g.bitcoin.paymentchannelB\006Protos"
+      "g.bitcoinj.paymentchannelB\006Protos"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

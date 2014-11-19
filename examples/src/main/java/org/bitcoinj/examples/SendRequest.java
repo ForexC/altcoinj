@@ -35,7 +35,7 @@ public class SendRequest {
         Address to = new Address(params, "mupBAFeT63hXfeeT4rnAUcpKHDkz1n4fdw");
 
         // There are different ways to create and publish a SendRequest. This is probably the easiest one.
-        // Have a look at the code of the SendRequest class to see what's happening and what other options you have: https://bitcoinj.github.io/javadoc/0.11/com/google/bitcoin/core/Wallet.SendRequest.html
+        // Have a look at the code of the SendRequest class to see what's happening and what other options you have: https://bitcoinj.github.io/javadoc/0.11/com/google/bitcoinj/core/Wallet.SendRequest.html
         // 
         // Please note that this might raise a InsufficientMoneyException if your wallet has not enough coins to spend.
         // When using the testnet you can use a faucet (like the http://faucet.xeno-genesis.com/) to get testnet coins.

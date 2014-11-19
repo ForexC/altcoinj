@@ -141,7 +141,7 @@ public class FilteredBlockAndPartialMerkleTreeTests extends TestWithPeerGroup {
         super.setUp(blockStore);
         
         peerGroup.addWallet(wallet);
-        peerGroup.setUseLocalhostPeerWhenPossible(false); // Prevents from connecting to bitcoin nodes on localhost.
+        peerGroup.setUseLocalhostPeerWhenPossible(false); // Prevents from connecting to bitcoinj nodes on localhost.
 
         blockChain.addWallet(wallet);
 

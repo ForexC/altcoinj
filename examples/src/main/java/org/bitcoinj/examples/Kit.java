@@ -23,10 +23,10 @@ public class Kit {
         // - MainNetParams
         // - TestNet3Params
         // - RegTestParams
-        // While developing your application you probably want to use the Regtest mode and run your local bitcoin network. Run bitcoind with the -regtest flag
-        // To test you app with a real network you can use the testnet. The testnet is an alternative bitcoin network that follows the same rules as main network. Coins are worth nothing and you can get coins for example from http://faucet.xeno-genesis.com/
+        // While developing your application you probably want to use the Regtest mode and run your local bitcoinj network. Run bitcoind with the -regtest flag
+        // To test you app with a real network you can use the testnet. The testnet is an alternative bitcoinj network that follows the same rules as main network. Coins are worth nothing and you can get coins for example from http://faucet.xeno-genesis.com/
         // 
-        // For more information have a look at: https://bitcoinj.github.io/testing and https://bitcoin.org/en/developer-examples#testing-applications
+        // For more information have a look at: https://bitcoinj.github.io/testing and https://bitcoinj.org/en/developer-examples#testing-applications
         NetworkParameters params = TestNet3Params.get();
 
         // Now we initialize a new WalletAppKit. The kit handles all the boilerplate for us and is the easiest way to get everything up and running.

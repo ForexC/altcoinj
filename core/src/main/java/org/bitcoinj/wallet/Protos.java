@@ -2577,7 +2577,7 @@ public final class Protos {
        * <code>ORIGINAL = 1;</code>
        *
        * <pre>
-       ** Unencrypted - Original bitcoin secp256k1 curve 
+       ** Unencrypted - Original bitcoinj secp256k1 curve
        * </pre>
        */
       ORIGINAL(0, 1),
@@ -2585,7 +2585,7 @@ public final class Protos {
        * <code>ENCRYPTED_SCRYPT_AES = 2;</code>
        *
        * <pre>
-       ** Encrypted with Scrypt and AES - Original bitcoin secp256k1 curve 
+       ** Encrypted with Scrypt and AES - Original bitcoinj secp256k1 curve
        * </pre>
        */
       ENCRYPTED_SCRYPT_AES(1, 2),
@@ -2618,7 +2618,7 @@ public final class Protos {
        * <code>ORIGINAL = 1;</code>
        *
        * <pre>
-       ** Unencrypted - Original bitcoin secp256k1 curve 
+       ** Unencrypted - Original bitcoinj secp256k1 curve
        * </pre>
        */
       public static final int ORIGINAL_VALUE = 1;
@@ -2626,7 +2626,7 @@ public final class Protos {
        * <code>ENCRYPTED_SCRYPT_AES = 2;</code>
        *
        * <pre>
-       ** Encrypted with Scrypt and AES - Original bitcoin secp256k1 curve 
+       ** Encrypted with Scrypt and AES - Original bitcoinj secp256k1 curve
        * </pre>
        */
       public static final int ENCRYPTED_SCRYPT_AES_VALUE = 2;
@@ -4760,7 +4760,7 @@ public final class Protos {
      * <code>required bytes transaction_out_point_hash = 1;</code>
      *
      * <pre>
-     * Hash of the transaction this input is using.
+     * Sha256Hash of the transaction this input is using.
      * </pre>
      */
     boolean hasTransactionOutPointHash();
@@ -4768,7 +4768,7 @@ public final class Protos {
      * <code>required bytes transaction_out_point_hash = 1;</code>
      *
      * <pre>
-     * Hash of the transaction this input is using.
+     * Sha256Hash of the transaction this input is using.
      * </pre>
      */
     com.google.protobuf.ByteString getTransactionOutPointHash();
@@ -4968,7 +4968,7 @@ public final class Protos {
      * <code>required bytes transaction_out_point_hash = 1;</code>
      *
      * <pre>
-     * Hash of the transaction this input is using.
+     * Sha256Hash of the transaction this input is using.
      * </pre>
      */
     public boolean hasTransactionOutPointHash() {
@@ -4978,7 +4978,7 @@ public final class Protos {
      * <code>required bytes transaction_out_point_hash = 1;</code>
      *
      * <pre>
-     * Hash of the transaction this input is using.
+     * Sha256Hash of the transaction this input is using.
      * </pre>
      */
     public com.google.protobuf.ByteString getTransactionOutPointHash() {
@@ -5406,7 +5406,7 @@ public final class Protos {
        * <code>required bytes transaction_out_point_hash = 1;</code>
        *
        * <pre>
-       * Hash of the transaction this input is using.
+       * Sha256Hash of the transaction this input is using.
        * </pre>
        */
       public boolean hasTransactionOutPointHash() {
@@ -5416,7 +5416,7 @@ public final class Protos {
        * <code>required bytes transaction_out_point_hash = 1;</code>
        *
        * <pre>
-       * Hash of the transaction this input is using.
+       * Sha256Hash of the transaction this input is using.
        * </pre>
        */
       public com.google.protobuf.ByteString getTransactionOutPointHash() {
@@ -5426,7 +5426,7 @@ public final class Protos {
        * <code>required bytes transaction_out_point_hash = 1;</code>
        *
        * <pre>
-       * Hash of the transaction this input is using.
+       * Sha256Hash of the transaction this input is using.
        * </pre>
        */
       public Builder setTransactionOutPointHash(com.google.protobuf.ByteString value) {
@@ -5442,7 +5442,7 @@ public final class Protos {
        * <code>required bytes transaction_out_point_hash = 1;</code>
        *
        * <pre>
-       * Hash of the transaction this input is using.
+       * Sha256Hash of the transaction this input is using.
        * </pre>
        */
       public Builder clearTransactionOutPointHash() {
@@ -14316,7 +14316,7 @@ public final class Protos {
    * Protobuf type {@code wallet.Wallet}
    *
    * <pre>
-   ** A bitcoin wallet 
+   ** A bitcoinj wallet
    * </pre>
    */
   public static final class Wallet extends
@@ -15451,7 +15451,7 @@ public final class Protos {
      * Protobuf type {@code wallet.Wallet}
      *
      * <pre>
-     ** A bitcoin wallet 
+     ** A bitcoinj wallet
      * </pre>
      */
     public static final class Builder extends
@@ -19130,6 +19130,7 @@ public final class Protos {
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_wallet_Transaction_descriptor,
               new java.lang.String[] { "Version", "Hash", "Pool", "LockTime", "UpdatedAt", "TransactionInput", "TransactionOutput", "BlockHash", "BlockRelativityOffsets", "Confidence", "Purpose", "ExchangeRate", "Memo", });
+
           internal_static_wallet_ScryptParameters_descriptor =
             getDescriptor().getMessageTypes().get(9);
           internal_static_wallet_ScryptParameters_fieldAccessorTable = new

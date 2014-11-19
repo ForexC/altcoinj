@@ -297,7 +297,7 @@ public class ScriptBuilder {
 
     /**
      * Creates a scriptPubKey that sends to the given script hash. Read
-     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0016.mediawiki">BIP 16</a> to learn more about this
+     * <a href="https://github.com/bitcoinj/bips/blob/master/bip-0016.mediawiki">BIP 16</a> to learn more about this
      * kind of script.
      */
     public static Script createP2SHOutputScript(byte[] hash) {
@@ -309,7 +309,7 @@ public class ScriptBuilder {
      * Creates a scriptPubKey for the given redeem script.
      */
     public static Script createP2SHOutputScript(Script redeemScript) {
-        byte[] hash = Utils.sha256hash160(redeemScript.getProgram());
+        byte[] hash = Utils.Hash160(redeemScript.getProgram());
         return ScriptBuilder.createP2SHOutputScript(hash);
     }
 

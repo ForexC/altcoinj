@@ -31,7 +31,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Implementation of the <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP 32</a>
+ * Implementation of the <a href="https://github.com/bitcoinj/bips/blob/master/bip-0032.mediawiki">BIP 32</a>
  * deterministic wallet child key generation algorithm.
  */
 public final class HDKeyDerivation {

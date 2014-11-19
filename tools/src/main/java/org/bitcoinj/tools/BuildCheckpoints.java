@@ -72,7 +72,7 @@ public class BuildCheckpoints {
             @Override
             public void notifyNewBestBlock(StoredBlock block) throws VerificationException {
                 int height = block.getHeight();
-                if (height % PARAMS.getInterval() == 0 && block.getHeader().getTimeSeconds() <= oneMonthAgo) {
+                if (height % PARAMS.getInterval(height) == 0 && block.getHeader().getTimeSeconds() <= oneMonthAgo) {
                     System.out.println(String.format("Checkpointing block %s at height %d",
                             block.getHeader().getHash(), block.getHeight()));
                     checkpoints.put(height, block);
@@ -117,7 +117,7 @@ public class BuildCheckpoints {
         }
         dataOutputStream.close();
         Sha256Hash checkpointsHash = new Sha256Hash(digest.digest());
-        System.out.println("Hash of checkpoints data is " + checkpointsHash);
+        System.out.println("Sha256Hash of checkpoints data is " + checkpointsHash);
         digestOutputStream.close();
         fileOutputStream.close();
         System.out.println("Checkpoints written to '" + file.getCanonicalPath() + "'.");

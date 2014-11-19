@@ -60,7 +60,7 @@ public class VersionMessage extends Message {
      */
     public PeerAddress theirAddr;
     /**
-     * User-Agent as defined in <a href="https://github.com/bitcoin/bips/blob/master/bip-0014.mediawiki">BIP 14</a>.
+     * User-Agent as defined in <a href="https://github.com/bitcoinj/bips/blob/master/bip-0014.mediawiki">BIP 14</a>.
      * The official client sets it to something like "/Satoshi:0.9.1/".
      */
     public String subVer;
@@ -70,7 +70,7 @@ public class VersionMessage extends Message {
     public long bestHeight;
     /**
      * Whether or not to relay tx invs before a filter is received.
-     * See <a href="https://github.com/bitcoin/bips/blob/master/bip-0037.mediawiki#extensions-to-existing-messages">BIP 37</a>.
+     * See <a href="https://github.com/bitcoinj/bips/blob/master/bip-0037.mediawiki#extensions-to-existing-messages">BIP 37</a>.
      */
     public boolean relayTxesBeforeFilter;
 
@@ -274,7 +274,7 @@ public class VersionMessage extends Message {
      * set of "/BitCoinJ:1.0/MultiBit:1.0(Windows)/". Therefore the / ( and ) characters are reserved in all these
      * components. If you don't want to add a comment (recommended), pass null.<p>
      *
-     * See <a href="https://github.com/bitcoin/bips/blob/master/bip-0014.mediawiki">BIP 14</a> for more information.
+     * See <a href="https://github.com/bitcoinj/bips/blob/master/bip-0014.mediawiki">BIP 14</a> for more information.
      *
      * @param comments Optional (can be null) platform or other node specific information.
      * @throws IllegalArgumentException if name, version or comments contains invalid characters.

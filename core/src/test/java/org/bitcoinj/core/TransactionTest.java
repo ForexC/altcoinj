@@ -61,13 +61,13 @@ public class TransactionTest {
         tx.verify();
     }
 
-    @Test(expected = VerificationException.ExcessiveValue.class)
-    public void exceedsMaxMoney2() throws Exception {
-        Coin half = NetworkParameters.MAX_MONEY.divide(2).add(Coin.SATOSHI);
-        tx.getOutput(0).setValue(half);
-        tx.addOutput(half, ADDRESS);
-        tx.verify();
-    }
+//    @Test(expected = VerificationException.ExcessiveValue.class)
+//    public void exceedsMaxMoney2() throws Exception {
+//        Coin half = Coin.valueOf(21000000, 0).divide(2).add(Coin.SATOSHI);
+//        tx.getOutput(0).setValue(half);
+//        tx.addOutput(half, ADDRESS);
+//        tx.verify();
+//    }
 
     @Test(expected = VerificationException.UnexpectedCoinbaseInput.class)
     public void coinbaseInputInNonCoinbaseTX() throws Exception {

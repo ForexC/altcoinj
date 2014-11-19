@@ -29,7 +29,7 @@ public class PeerAddressTest
 {
     @Test
     public void testPeerAddressRoundtrip() throws Exception {
-        // copied verbatim from https://en.bitcoin.it/wiki/Protocol_specification#Network_address
+        // copied verbatim from https://en.bitcoinj.it/wiki/Protocol_specification#Network_address
         String fromSpec = "010000000000000000000000000000000000ffff0a000001208d";
         PeerAddress pa = new PeerAddress(MainNetParams.get(),
                 HEX.decode(fromSpec), 0, 0);

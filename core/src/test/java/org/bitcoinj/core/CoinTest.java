@@ -17,7 +17,6 @@
 package org.bitcoinj.core;
 
 import static org.bitcoinj.core.Coin.*;
-import static org.bitcoinj.core.NetworkParameters.MAX_MONEY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -45,19 +44,21 @@ public class CoinTest {
 
     @Test
     public void testValueOf() {
+        Coin MAX_BITCOINS = Coin.valueOf(21000000, 0);
+
         // int version
         assertEquals(CENT, valueOf(0, 1));
         assertEquals(SATOSHI, valueOf(1));
         assertEquals(NEGATIVE_SATOSHI, valueOf(-1));
-        assertEquals(MAX_MONEY, valueOf(MAX_MONEY.value));
-        assertEquals(MAX_MONEY.negate(), valueOf(MAX_MONEY.value * -1));
-        try {
-            valueOf(MAX_MONEY.value + 1);
+        assertEquals(MAX_BITCOINS, valueOf(MAX_BITCOINS.value));
+        assertEquals(MAX_BITCOINS.negate(), valueOf(MAX_BITCOINS.value * -1));
+        /*try {
+            valueOf(MAX_BITCOINS.value + 1);
             org.junit.Assert.fail("should not have accepted too-great a monetary value");
         } catch (IllegalArgumentException e) {
         }
         try {
-            valueOf( (MAX_MONEY.value * -1) - 1);
+            valueOf( (MAX_BITCOINS.value * -1) - 1);
             org.junit.Assert.fail("should not have accepted too-little a monetary value");
         } catch (IllegalArgumentException e) {
         }
@@ -66,6 +67,7 @@ public class CoinTest {
             valueOf(Long.MIN_VALUE);
             fail();
         } catch (IllegalArgumentException e) {}
+        */
 
         try {
             valueOf(1, -1);
@@ -121,10 +123,10 @@ public class CoinTest {
         assertEquals("54321.12345", parseCoin("54321.12345").toPlainString());
         assertEquals("654321.123456", parseCoin("654321.123456").toPlainString());
         assertEquals("7654321.1234567", parseCoin("7654321.1234567").toPlainString());
-        try {
+        /*try {
             assertEquals("87654321.12345678", parseCoin("87654321.12345678").toPlainString());
-            Assert.fail();  // More than MAX_MONEY
-        } catch (Exception e) {}
+            Assert.fail();  // More than MAX_BITCOINS
+        } catch (Exception e) {}*/
 
         // check there are no trailing zeros
         assertEquals("1", parseCoin("1.0").toPlainString());

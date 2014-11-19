@@ -33,7 +33,7 @@ import static com.google.common.base.Preconditions.*;
 
 /**
  * A deterministic key is a node in a {@link DeterministicHierarchy}. As per
- * <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">the BIP 32 specification</a> it is a pair
+ * <a href="https://github.com/bitcoinj/bips/blob/master/bip-0032.mediawiki">the BIP 32 specification</a> it is a pair
  * (key, chaincode). If you know its path in the tree and its chain code you can derive more keys from this. To obtain
  * one of these, you can call {@link HDKeyDerivation#createMasterPrivateKey(byte[])}.
  */
@@ -130,7 +130,7 @@ public class DeterministicKey extends ECKey {
      * Returns RIPE-MD160(SHA256(pub key bytes)).
      */
     public byte[] getIdentifier() {
-        return Utils.sha256hash160(getPubKey());
+        return Utils.Hash160(getPubKey());
     }
 
     /** Returns the first 32 bits of the result of {@link #getIdentifier()}. */

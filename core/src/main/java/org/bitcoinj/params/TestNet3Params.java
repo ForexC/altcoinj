@@ -17,8 +17,8 @@
 
 package org.bitcoinj.params;
 
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.Utils;
+import org.bitcoinj.core.*;
+import org.bitcoinj.pows.Sha256ProofOfWork;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -26,14 +26,18 @@ import static com.google.common.base.Preconditions.checkState;
  * Parameters for the testnet, a separate public instance of Bitcoin that has relaxed rules suitable for development
  * and testing of applications and new Bitcoin versions.
  */
-public class TestNet3Params extends NetworkParameters {
+public class TestNet3Params extends TestNet2Params {
     public TestNet3Params() {
-        super();
+        maxMoney = Coin.COIN.multiply(21000000);
+        alertSigningKey = SATOSHI_KEY;
+        genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
         // Genesis hash is 000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943
         packetMagic = 0x0b110907;
-        interval = INTERVAL;
-        targetTimespan = TARGET_TIMESPAN;
+        interval = MainNetParams.INTERVAL;
+        targetTimespan = MainNetParams.TARGET_TIMESPAN;
+        targetSpacing = MainNetParams.TARGET_SPACING;
+        proofOfWork = Sha256ProofOfWork.get();
         maxTarget = Utils.decodeCompactBits(0x1d00ffffL);
         port = 18333;
         addressHeader = 111;
@@ -51,9 +55,11 @@ public class TestNet3Params extends NetworkParameters {
 
         dnsSeeds = new String[] {
                 "testnet-seed.alexykot.me",           // Alex Kotenko
-                "testnet-seed.bitcoin.schildbach.de", // Andreas Schildbach
-                "testnet-seed.bitcoin.petertodd.org"  // Peter Todd
+                "testnet-seed.bitcoinj.schildbach.de", // Andreas Schildbach
+                "testnet-seed.bitcoinj.petertodd.org"  // Peter Todd
         };
+        
+        bloomFiltersEnabled = true;
     }
 
     private static TestNet3Params instance;

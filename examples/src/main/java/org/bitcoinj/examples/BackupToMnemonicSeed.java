@@ -11,8 +11,8 @@ import com.google.common.base.Joiner;
  * This seed can be used to fully restore your wallet. The RestoreFromSeed.java example shows how to load the wallet from this seed.
  * 
  * In Bitcoin Improvement Proposal (BIP) 39 and BIP 32 describe the details about hierarchical deterministic wallets and mnemonic sentences
- * https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki
- * https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+ * https://github.com/bitcoinj/bips/blob/master/bip-0039.mediawiki
+ * https://github.com/bitcoinj/bips/blob/master/bip-0032.mediawiki
  */
 public class BackupToMnemonicSeed {
 

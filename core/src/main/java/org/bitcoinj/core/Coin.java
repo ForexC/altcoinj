@@ -36,7 +36,7 @@ public final class Coin implements Monetary, Comparable<Coin>, Serializable {
     public static final int SMALLEST_UNIT_EXPONENT = 8;
 
     /**
-     * The number of satoshis equal to one bitcoin.
+     * The number of satoshis equal to one bitcoinj.
      */
     private static final long COIN_VALUE = LongMath.pow(10, SMALLEST_UNIT_EXPONENT);
 
@@ -82,11 +82,11 @@ public final class Coin implements Monetary, Comparable<Coin>, Serializable {
      */
     public final long value;
 
-    private final long MAX_SATOSHIS = COIN_VALUE * NetworkParameters.MAX_COINS;
+//    private final long MAX_SATOSHIS = COIN_VALUE * NetworkParameters.MAX_COINS;
 
     private Coin(final long satoshis) {
-        checkArgument(-MAX_SATOSHIS <= satoshis && satoshis <= MAX_SATOSHIS,
-            "%s satoshis exceeds maximum possible quantity of Bitcoin.", satoshis);
+//        checkArgument(-MAX_SATOSHIS <= satoshis && satoshis <= MAX_SATOSHIS,
+//            "%s satoshis exceeds maximum possible quantity of Bitcoin.", satoshis);
         this.value = satoshis;
     }
 
@@ -115,7 +115,7 @@ public final class Coin implements Monetary, Comparable<Coin>, Serializable {
         checkArgument(cents >= 0);
         checkArgument(coins >= 0);
         final Coin coin = COIN.multiply(coins).add(CENT.multiply(cents));
-        checkArgument(coin.compareTo(NetworkParameters.MAX_MONEY) <= 0);
+//        checkArgument(coin.compareTo(NetworkParameters.MAX_MONEY) <= 0);
         return coin;
     }
 

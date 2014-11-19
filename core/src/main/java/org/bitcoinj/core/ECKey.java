@@ -417,7 +417,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /** Gets the hash160 form of the public key (as seen in addresses). */
     public byte[] getPubKeyHash() {
         if (pubKeyHash == null)
-            pubKeyHash = Utils.sha256hash160(this.pub.getEncoded());
+            pubKeyHash = Utils.Hash160(this.pub.getEncoded());
         return pubKeyHash;
     }
 
@@ -623,7 +623,7 @@ public class ECKey implements EncryptableItem, Serializable {
      * <p>When using native ECDSA verification, data must be 32 bytes, and no element may be
      * larger than 520 bytes.</p>
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      * @param pub       The public key bytes to use.
      */
@@ -651,7 +651,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /**
      * Verifies the given ASN.1 encoded ECDSA signature against a hash using the public key.
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      * @param pub       The public key bytes to use.
      */
@@ -664,7 +664,7 @@ public class ECKey implements EncryptableItem, Serializable {
     /**
      * Verifies the given ASN.1 encoded ECDSA signature against a hash using the public key.
      *
-     * @param data      Hash of the data to verify.
+     * @param data      Sha256Hash of the data to verify.
      * @param signature ASN.1 encoded signature.
      */
     public boolean verify(byte[] data, byte[] signature) {
@@ -845,7 +845,7 @@ public class ECKey implements EncryptableItem, Serializable {
      *
      * @param recId Which possible key to recover.
      * @param sig the R and S components of the signature, wrapped.
-     * @param message Hash of the data that was signed.
+     * @param message Sha256Hash of the data that was signed.
      * @param compressed Whether or not the original pubkey was compressed.
      * @return An ECKey containing only the public part, or null if recovery wasn't possible.
      */

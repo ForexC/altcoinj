@@ -18,6 +18,8 @@ package org.bitcoinj.params;
 
 import org.bitcoinj.core.Block;
 import org.bitcoinj.core.NetworkParameters;
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.pows.Sha256ProofOfWork;
 
 import java.math.BigInteger;
 
@@ -27,12 +29,15 @@ import java.math.BigInteger;
  */
 public class UnitTestParams extends NetworkParameters {
     public UnitTestParams() {
-        super();
+        maxMoney = Coin.COIN.multiply(21000000);
+        alertSigningKey = SATOSHI_KEY;
+        genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_UNITTESTNET;
         packetMagic = 0x0b110907;
         addressHeader = 111;
         p2shHeader = 196;
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
+        proofOfWork = Sha256ProofOfWork.get();
         maxTarget = new BigInteger("00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16);
         genesisBlock.setTime(System.currentTimeMillis() / 1000);
         genesisBlock.setDifficultyTarget(Block.EASIEST_DIFFICULTY_TARGET);
@@ -44,6 +49,7 @@ public class UnitTestParams extends NetworkParameters {
         spendableCoinbaseDepth = 5;
         subsidyDecreaseBlockCount = 100;
         dnsSeeds = null;
+        bloomFiltersEnabled = true;
     }
 
     private static UnitTestParams instance;

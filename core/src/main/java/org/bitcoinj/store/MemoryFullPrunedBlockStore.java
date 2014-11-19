@@ -32,7 +32,7 @@ import java.util.*;
 class StoredTransactionOutPoint implements Serializable {
     private static final long serialVersionUID = -4064230006297064377L;
 
-    /** Hash of the transaction to which we refer. */
+    /** Sha256Hash of the transaction to which we refer. */
     Sha256Hash hash;
     /** Which output of that transaction we are talking about. */
     long index;
@@ -382,7 +382,6 @@ public class MemoryFullPrunedBlockStore implements FullPrunedBlockStore {
         transactionOutputMap.abortDatabaseBatchWrite();
     }
 
-    @Override
     public synchronized boolean hasUnspentOutputs(Sha256Hash hash, int numOutputs) throws BlockStoreException {
         for (int i = 0; i < numOutputs; i++)
             if (getTransactionOutput(hash, i) != null)

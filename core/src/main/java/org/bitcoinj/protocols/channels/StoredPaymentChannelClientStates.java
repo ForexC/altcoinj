@@ -262,8 +262,8 @@ public class StoredPaymentChannelClientStates implements WalletExtension {
             ClientState.StoredClientPaymentChannels.Builder builder = ClientState.StoredClientPaymentChannels.newBuilder();
             for (StoredClientChannel channel : mapChannels.values()) {
                 // First a few asserts to make sure things won't break
-                checkState(channel.valueToMe.signum() >= 0 && channel.valueToMe.compareTo(NetworkParameters.MAX_MONEY) < 0);
-                checkState(channel.refundFees.signum() >= 0 && channel.refundFees.compareTo(NetworkParameters.MAX_MONEY) < 0);
+                checkState(channel.valueToMe.signum() >= 0 && (containingWallet.getParams().getMaxMoney() != null || channel.valueToMe.compareTo(containingWallet.getParams().getMaxMoney()) < 0));
+                checkState(channel.refundFees.signum() >= 0 && (containingWallet.getParams().getMaxMoney() == null || channel.refundFees.compareTo(containingWallet.getParams().getMaxMoney()) < 0));
                 checkNotNull(channel.myKey.getPrivKeyBytes());
                 checkState(channel.refund.getConfidence().getSource() == TransactionConfidence.Source.SELF);
                 final ClientState.StoredClientPaymentChannel.Builder value = ClientState.StoredClientPaymentChannel.newBuilder()

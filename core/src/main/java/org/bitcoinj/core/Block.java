@@ -43,7 +43,7 @@ import static org.bitcoinj.core.Utils.doubleDigestTwoBuffers;
  * <p>A block is a group of transactions, and is one of the fundamental data structures of the Bitcoin system.
  * It records a set of {@link Transaction}s together with some data that links it into a place in the global block
  * chain, and proves that a difficult calculation was done over its contents. See
- * <a href="http://www.bitcoin.org/bitcoin.pdf">the Bitcoin technical paper</a> for
+ * <a href="http://www.bitcoinj.org/bitcoinj.pdf">the Bitcoin technical paper</a> for
  * more detail on blocks. <p/>
  *
  * To get a block, you can either build one from the raw bytes you can get from another implementation, or request one
@@ -650,18 +650,7 @@ public class Block extends Message {
         //
         // To prevent this attack from being possible, elsewhere we check that the difficultyTarget
         // field is of the right value. This requires us to have the preceeding blocks.
-        BigInteger target = getDifficultyTargetAsInteger();
-
-        BigInteger h = getHash().toBigInteger();
-        if (h.compareTo(target) > 0) {
-            // Proof of work check failed!
-            if (throwException)
-                throw new VerificationException("Hash is higher than target: " + getHashAsString() + " vs "
-                        + target.toString(16));
-            else
-                return false;
-        }
-        return true;
+        return params.getProofOfWork().check(this, throwException);
     }
 
     private void checkTimestamp() throws VerificationException {

@@ -144,13 +144,15 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
 
         @Override
         public void onBlocksDownloaded(Peer peer, Block block, int blocksLeft) {
-            final double rate = checkNotNull(chain).getFalsePositiveRate();
-            final double target = bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE;
-            if (rate > target) {
-                // TODO: Avoid hitting this path if the remote peer didn't acknowledge applying a new filter yet.
-                if (log.isDebugEnabled())
-                    log.debug("Force update Bloom filter due to high false positive rate ({} vs {})", rate, target);
-                recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+            if(params.getBloomFiltersEnabled()) {
+                final double rate = checkNotNull(chain).getFalsePositiveRate();
+                final double target = bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE;
+                if (rate > target) {
+                    // TODO: Avoid hitting this path if the remote peer didn't acknowledge applying a new filter yet.
+                    if (log.isDebugEnabled())
+                        log.debug("Force update Bloom filter due to high false positive rate ({} vs {})", rate, target);
+                    recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+                }
             }
         }
     };
@@ -486,7 +488,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
      * Sets the {@link VersionMessage} that will be announced on newly created connections. A version message is
      * primarily interesting because it lets you customize the "subVer" field which is used a bit like the User-Agent
      * field from HTTP. It means your client tells the other side what it is, see
-     * <a href="https://github.com/bitcoin/bips/blob/master/bip-0014.mediawiki">BIP 14</a>.
+     * <a href="https://github.com/bitcoinj/bips/blob/master/bip-0014.mediawiki">BIP 14</a>.
      *
      * The VersionMessage you provide is copied and the best chain height/time filled in for each new connection,
      * therefore you don't have to worry about setting that. The provided object is really more of a template.
@@ -952,26 +954,31 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
             // Fully verifying mode doesn't use this optimization (it can't as it needs to see all transactions).
             if (chain != null && chain.shouldVerifyTransactions())
                 return;
+
             FilterMerger.Result result = bloomFilterMerger.calculate(ImmutableList.copyOf(peerFilterProviders));
-            boolean send;
-            switch (mode) {
-                case SEND_IF_CHANGED: send = result.changed; break;
-                case DONT_SEND: send = false; break;
-                case FORCE_SEND_FOR_REFRESH: send = true; break;
-                default: throw new UnsupportedOperationException();
-            }
-            if (send) {
-                for (Peer peer : peers) {
-                    // Only query the mempool if this recalculation request is not in order to lower the observed FP
-                    // rate. There's no point querying the mempool when doing this because the FP rate can only go
-                    // down, and we will have seen all the relevant txns before: it's pointless to ask for them again.
-                    peer.setBloomFilter(result.filter, mode != FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+
+            if(params.getBloomFiltersEnabled()) {
+                boolean send;
+                switch (mode) {
+                    case SEND_IF_CHANGED: send = result.changed; break;
+                    case DONT_SEND: send = false; break;
+                    case FORCE_SEND_FOR_REFRESH: send = true; break;
+                    default: throw new UnsupportedOperationException();
                 }
-                // Reset the false positive estimate so that we don't send a flood of filter updates
-                // if the estimate temporarily overshoots our threshold.
-                if (chain != null)
-                    chain.resetFalsePositiveEstimate();
+                if (send) {
+                    for (Peer peer : peers) {
+                        // Only query the mempool if this recalculation request is not in order to lower the observed FP
+                        // rate. There's no point querying the mempool when doing this because the FP rate can only go
+                        // down, and we will have seen all the relevant txns before: it's pointless to ask for them again.
+                        peer.setBloomFilter(result.filter, mode != FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+                    }
+                    // Reset the false positive estimate so that we don't send a flood of filter updates
+                    // if the estimate temporarily overshoots our threshold.
+                    if (chain != null)
+                        chain.resetFalsePositiveEstimate();
+                }
             }
+
             // Do this last so that bloomFilter is already set when it gets called.
             setFastCatchupTimeSecs(result.earliestKeyTimeSecs);
         } finally {
@@ -1141,7 +1148,8 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
             // Give the peer a filter that can be used to probabilistically drop transactions that
             // aren't relevant to our wallet. We may still receive some false positives, which is
             // OK because it helps improve wallet privacy. Old nodes will just ignore the message.
-            if (bloomFilterMerger.getLastFilter() != null) peer.setBloomFilter(bloomFilterMerger.getLastFilter());
+            if (params.bloomFiltersEnabled && bloomFilterMerger.getLastFilter() != null)
+                peer.setBloomFilter(bloomFilterMerger.getLastFilter());
             // Link the peer to the memory pool so broadcast transactions have their confidence levels updated.
             peer.setDownloadData(false);
             // TODO: The peer should calculate the fast catchup time from the added wallets here.

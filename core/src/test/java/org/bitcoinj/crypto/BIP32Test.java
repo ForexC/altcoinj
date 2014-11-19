@@ -33,7 +33,7 @@ import static org.bitcoinj.core.Utils.HEX;
 import static org.junit.Assert.assertEquals;
 
 /**
- * A test with test vectors as per BIP 32 spec: https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#Test_Vectors
+ * A test with test vectors as per BIP 32 spec: https://github.com/bitcoinj/bips/blob/master/bip-0032.mediawiki#Test_Vectors
  */
 public class BIP32Test {
     private static final Logger log = LoggerFactory.getLogger(BIP32Test.class);

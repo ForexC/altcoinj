@@ -899,9 +899,9 @@ public class PeerTest extends TestWithNetworkConnections {
             @Override
             public void bitcoinSerializeToStream(OutputStream stream) throws IOException {
                 // Add some hashes.
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[] { 1 })));
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[] { 2 })));
-                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[] { 3 })));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{1})));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{2})));
+                addItem(new InventoryItem(InventoryItem.Type.Transaction, Sha256Hash.create(new byte[]{3})));
 
                 // Write out a copy that's truncated in the middle.
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();

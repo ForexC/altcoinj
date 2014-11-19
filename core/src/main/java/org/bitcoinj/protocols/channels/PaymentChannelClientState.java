@@ -60,7 +60,7 @@ import static com.google.common.base.Preconditions.*;
  * exception will be thrown at this point. Once this is done, call
  * {@link PaymentChannelClientState#getIncompleteRefundTransaction()} and pass the resultant transaction through to the
  * server. Once you have retrieved the signature, use {@link PaymentChannelClientState#provideRefundSignature(byte[])}.
- * You must then call {@link PaymentChannelClientState#storeChannelInWallet(Sha256Hash)} to store the refund transaction
+ * You must then call {@link PaymentChannelClientState#storeChannelInWallet(org.bitcoinj.core.Sha256Hash)} to store the refund transaction
  * in the wallet, protecting you against a malicious server attempting to destroy all your coins. At this point, you can
  * provide the server with the multi-sig contract (via {@link PaymentChannelClientState#getMultisigContract()}) safely.
  * </p>
@@ -435,7 +435,7 @@ public class PaymentChannelClientState {
      * Sets this channel's state in {@link StoredPaymentChannelClientStates} to unopened so this channel can be reopened
      * later.
      *
-     * @see PaymentChannelClientState#storeChannelInWallet(Sha256Hash)
+     * @see PaymentChannelClientState#storeChannelInWallet(org.bitcoinj.core.Sha256Hash)
      */
     public synchronized void disconnectFromChannel() {
         if (storedChannel == null)

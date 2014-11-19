@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Utility methods and constants for working with <a href="https://github.com/bitcoin/bips/blob/master/bip-0070.mediawiki">
+ * <p>Utility methods and constants for working with <a href="https://github.com/bitcoinj/bips/blob/master/bip-0070.mediawiki">
  * BIP 70 aka the payment protocol</a>. These are low level wrappers around the protocol buffers. If you're implementing
  * a wallet app, look at {@link PaymentSession} for a higher level API that should simplify working with the protocol.</p>
  *
@@ -47,9 +47,9 @@ import java.util.List;
 public class PaymentProtocol {
 
     // MIME types as defined in BIP71.
-    public static final String MIMETYPE_PAYMENTREQUEST = "application/bitcoin-paymentrequest";
-    public static final String MIMETYPE_PAYMENT = "application/bitcoin-payment";
-    public static final String MIMETYPE_PAYMENTACK = "application/bitcoin-paymentack";
+    public static final String MIMETYPE_PAYMENTREQUEST = "application/bitcoinj-paymentrequest";
+    public static final String MIMETYPE_PAYMENT = "application/bitcoinj-payment";
+    public static final String MIMETYPE_PAYMENTACK = "application/bitcoinj-paymentack";
 
     /**
      * Create a payment request with one standard pay to address output. You may want to sign the request using
@@ -398,8 +398,9 @@ public class PaymentProtocol {
     public static Protos.Output createPayToAddressOutput(@Nullable Coin amount, Address address) {
         Protos.Output.Builder output = Protos.Output.newBuilder();
         if (amount != null) {
-            if (amount.compareTo(NetworkParameters.MAX_MONEY) > 0)
-                throw new IllegalArgumentException("Amount too big: " + amount);
+            // TODO: get params to make this check
+            //if (amount.compareTo(NetworkParameters.MAX_MONEY) > 0)
+            //    throw new IllegalArgumentException("Amount too big: " + amount);
             output.setAmount(amount.value);
         } else {
             output.setAmount(0);

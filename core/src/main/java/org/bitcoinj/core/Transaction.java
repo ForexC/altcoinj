@@ -101,7 +101,7 @@ public class Transaction extends ChildMessage implements Serializable {
      */
     public static final Coin MIN_NONDUST_OUTPUT = Coin.valueOf(546);
 
-    // These are serialized in both bitcoin and java serialization.
+    // These are serialized in both bitcoinj and java serialization.
     private long version;
     private ArrayList<TransactionInput> inputs;
     private ArrayList<TransactionOutput> outputs;
@@ -851,7 +851,7 @@ public class Transaction extends ChildMessage implements Serializable {
      * Calculates a signature that is valid for being inserted into the input at the given position. This is simply
      * a wrapper around calling {@link Transaction#hashForSignature(int, byte[], org.bitcoinj.core.Transaction.SigHash, boolean)}
      * followed by {@link ECKey#sign(Sha256Hash)} and then returning a new {@link TransactionSignature}. The key
-     * must be usable for signing as-is: if the key is encrypted it must be decrypted first external to this method.
+     * must be usable for signing as-is: if the key is encrypted it must be decrypted first external to this method.d
      *
      * @param inputIndex Which input to calculate the signature for, as an index.
      * @param key The private key used to calculate the signature.
@@ -934,7 +934,7 @@ public class Transaction extends ChildMessage implements Serializable {
         // The SIGHASH flags are used in the design of contracts, please see this page for a further understanding of
         // the purposes of the code in this method:
         //
-        //   https://en.bitcoin.it/wiki/Contracts
+        //   https://en.bitcoinj.it/wiki/Contracts
 
         try {
             // Store all the input scripts and clear them in preparation for signing. If we're signing a fresh
@@ -1211,8 +1211,8 @@ public class Transaction extends ChildMessage implements Serializable {
                     throw new VerificationException.NegativeValueOutput();
                 valueOut = valueOut.add(output.getValue());
                 // Duplicate the MAX_MONEY check from Coin.add() in case someone accidentally removes it.
-                if (valueOut.compareTo(NetworkParameters.MAX_MONEY) > 0)
-                    throw new IllegalArgumentException();
+//                if (valueOut.compareTo(NetworkParameters.MAX_MONEY) > 0)
+//                    throw new IllegalArgumentException();
             }
         } catch (IllegalStateException e) {
             throw new VerificationException.ExcessiveValue();
@@ -1248,7 +1248,7 @@ public class Transaction extends ChildMessage implements Serializable {
     /**
      * <p>Returns true if this transaction is considered finalized and can be placed in a block. Non-finalized
      * transactions won't be included by miners and can be replaced with newer versions using sequence numbers.
-     * This is useful in certain types of <a href="http://en.bitcoin.it/wiki/Contracts">contracts</a>, such as
+     * This is useful in certain types of <a href="http://en.bitcoinj.it/wiki/Contracts">contracts</a>, such as
      * micropayment channels.</p>
      *
      * <p>Note that currently the replacement feature is disabled in the Satoshi client and will need to be

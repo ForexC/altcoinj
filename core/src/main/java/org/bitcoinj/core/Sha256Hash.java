@@ -97,7 +97,7 @@ public class Sha256Hash implements Serializable, Comparable<Sha256Hash> {
     }
 
     /**
-     * Hash code of the byte array as calculated by {@link Arrays#hashCode()}. Note the difference between a SHA256
+     * Sha256Hash code of the byte array as calculated by {@link Arrays#hashCode()}. Note the difference between a SHA256
      * secure bytes and the type of quick/dirty bytes used by the Java hashCode method which is designed for use in
      * bytes tables.
      */
@@ -129,6 +129,7 @@ public class Sha256Hash implements Serializable, Comparable<Sha256Hash> {
 
     @Override
     public int compareTo(Sha256Hash o) {
+        checkArgument(o instanceof Sha256Hash);
         int thisCode = this.hashCode();
         int oCode = ((Sha256Hash)o).hashCode();
         return thisCode > oCode ? 1 : (thisCode == oCode ? 0 : -1);

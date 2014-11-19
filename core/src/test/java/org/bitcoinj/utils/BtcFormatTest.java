@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Set;
 
 import static org.bitcoinj.core.Coin.*;
-import static org.bitcoinj.core.NetworkParameters.MAX_MONEY;
 import static org.bitcoinj.utils.BtcAutoFormat.Style.CODE;
 import static org.bitcoinj.utils.BtcAutoFormat.Style.SYMBOL;
 import static org.bitcoinj.utils.BtcFixedFormat.REPEATING_DOUBLETS;
@@ -41,6 +40,8 @@ import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class BtcFormatTest {
+
+    public static Coin MAX_BITCOINS = Coin.valueOf(21000000, 0);
 
     @Parameters
     public static Set<Locale[]> data() {
@@ -186,7 +187,7 @@ public class BtcFormatTest {
     public void columnAlignmentTest() {
         BtcFormat germany = BtcFormat.getCoinInstance(2,BtcFixedFormat.REPEATING_PLACES);
         char separator = germany.symbols().getDecimalSeparator();
-        Coin[] rows = {MAX_MONEY, MAX_MONEY.subtract(SATOSHI), Coin.parseCoin("1234"),
+        Coin[] rows = {MAX_BITCOINS, MAX_BITCOINS.subtract(SATOSHI), Coin.parseCoin("1234"),
                        COIN, COIN.add(SATOSHI), COIN.subtract(SATOSHI),
                         COIN.divide(1000).add(SATOSHI), COIN.divide(1000), COIN.divide(1000).subtract(SATOSHI),
                        valueOf(100), valueOf(1000), valueOf(10000),
@@ -210,7 +211,7 @@ public class BtcFormatTest {
     @Test
     public void repeatingPlaceTest() {
         BtcFormat mega = BtcFormat.getInstance(-6, US);
-        Coin value = MAX_MONEY.subtract(SATOSHI);
+        Coin value = MAX_BITCOINS.subtract(SATOSHI);
         assertEquals("20.99999999999999", mega.format(value, 0, BtcFixedFormat.REPEATING_PLACES));
         assertEquals("20.99999999999999", mega.format(value, 0, BtcFixedFormat.REPEATING_PLACES));
         assertEquals("20.99999999999999", mega.format(value, 1, BtcFixedFormat.REPEATING_PLACES));
@@ -1149,8 +1150,8 @@ public class BtcFormatTest {
         assertEquals("11,223,344.5567", coinFormat.format(value, 4));
 
         BtcFormat megaFormat = BtcFormat.getInstance(-6, US);
-        assertEquals("21.00", megaFormat.format(MAX_MONEY));
-        assertEquals("21", megaFormat.format(MAX_MONEY, 0));
+        assertEquals("21.00", megaFormat.format(MAX_BITCOINS));
+        assertEquals("21", megaFormat.format(MAX_BITCOINS, 0));
         assertEquals("11.22334455667788", megaFormat.format(value, 0, REPEATING_DOUBLETS));
         assertEquals("11.223344556677", megaFormat.format(Coin.valueOf(1122334455667700l), 0, REPEATING_DOUBLETS));
         assertEquals("11.22334455667788", megaFormat.format(value, 0, REPEATING_TRIPLETS));

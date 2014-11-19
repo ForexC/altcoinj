@@ -32,7 +32,7 @@ import static org.bitcoinj.core.Utils.*;
 
 /**
  * <p>Methods to serialize and de-serialize messages to the Bitcoin network format as defined in
- * <a href="https://en.bitcoin.it/wiki/Protocol_specification">the protocol specification</a>.</p>
+ * <a href="https://en.bitcoinj.it/wiki/Protocol_specification">the protocol specification</a>.</p>
  *
  * <p>To be able to serialize and deserialize new Message subclasses the following criteria needs to be met.</p>
  *

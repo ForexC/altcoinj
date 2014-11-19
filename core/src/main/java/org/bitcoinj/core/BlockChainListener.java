@@ -90,6 +90,6 @@ public interface BlockChainListener {
      * @return whether the transaction is known about i.e. was considered relevant previously.
      */
     boolean notifyTransactionIsInBlock(Sha256Hash txHash, StoredBlock block,
-                                       BlockChain.NewBlockType blockType,
-                                       int relativityOffset) throws VerificationException;
+                                    BlockChain.NewBlockType blockType,
+                                    int relativityOffset) throws VerificationException;
 }

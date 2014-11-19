@@ -183,7 +183,7 @@ public class BlockChainTest {
         // artificially shortened period.
         Block prev = unitTestParams.getGenesisBlock();
         Utils.setMockClock(System.currentTimeMillis()/1000);
-        for (int i = 0; i < unitTestParams.getInterval() - 1; i++) {
+        for (int i = 0; i < unitTestParams.getInterval(0) - 1; i++) {
             Block newBlock = prev.createNextBlock(coinbaseTo, Utils.currentTimeSeconds());
             assertTrue(chain.add(newBlock));
             prev = newBlock;

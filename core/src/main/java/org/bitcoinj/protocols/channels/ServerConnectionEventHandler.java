@@ -79,7 +79,7 @@ public abstract class ServerConnectionEventHandler {
 
     /**
      * <p>Called when the channel was closed for some reason. May be called without a call to
-     * {@link ServerConnectionEventHandler#channelOpen(Sha256Hash)}.</p>
+     * {@link ServerConnectionEventHandler#channelOpen(org.bitcoinj.core.Sha256Hash)}.</p>
      *
      * <p>Note that the same channel can be reopened at any point before it expires if the client reconnects and
      * requests it.</p>

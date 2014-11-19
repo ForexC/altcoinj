@@ -12,6 +12,8 @@ import java.util.List;
  * enough money in the wallet.
  */
 public interface CoinSelector {
+    public static final Coin ALL = Coin.valueOf(-1);
+
     /**
      * Creates a CoinSelection that tries to meet the target amount of value. The candidates list is given to
      * this call and can be edited freely. See the docs for CoinSelection to learn more, or look a the implementation

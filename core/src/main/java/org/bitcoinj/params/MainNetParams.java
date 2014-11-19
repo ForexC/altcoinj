@@ -19,6 +19,8 @@ package org.bitcoinj.params;
 import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.core.Utils;
+import org.bitcoinj.core.Coin;
+import org.bitcoinj.pows.Sha256ProofOfWork;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -26,10 +28,24 @@ import static com.google.common.base.Preconditions.checkState;
  * Parameters for the main production network on which people trade goods and services.
  */
 public class MainNetParams extends NetworkParameters {
+    //   "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
+    public static final byte[] GENESIS_INPUT = Utils.HEX.decode
+            ("04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73");
+    public static final byte[] GENESIS_SCRIPTPUBKEY = Utils.HEX.decode
+            ("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f");
+
+    public static final int TARGET_TIMESPAN = 14 * 24 * 60 * 60;  // 2 weeks per difficulty cycle, on average.
+    public static final int TARGET_SPACING = 10 * 60;  // 10 minutes per block.
+    public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING;
+
     public MainNetParams() {
-        super();
+        maxMoney = Coin.COIN.multiply(21000000);
+        alertSigningKey = SATOSHI_KEY;
+        genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY);
         interval = INTERVAL;
         targetTimespan = TARGET_TIMESPAN;
+        targetSpacing = TARGET_SPACING;
+        proofOfWork = Sha256ProofOfWork.get();
         maxTarget = Utils.decodeCompactBits(0x1d00ffffL);
         dumpedPrivateKeyHeader = 128;
         addressHeader = 0;
@@ -58,12 +74,14 @@ public class MainNetParams extends NetworkParameters {
         checkpoints.put(200000, new Sha256Hash("000000000000034a7dedef4a161fa058a2d67a173a90155f3a2fe6fc132e0ebf"));
 
         dnsSeeds = new String[] {
-                "seed.bitcoin.sipa.be",        // Pieter Wuille
+                "seed.bitcoinj.sipa.be",        // Pieter Wuille
                 "dnsseed.bluematt.me",         // Matt Corallo
-                "dnsseed.bitcoin.dashjr.org",  // Luke Dashjr
+                "dnsseed.bitcoinj.dashjr.org",  // Luke Dashjr
                 "seed.bitcoinstats.com",       // Chris Decker
                 "seed.bitnodes.io",            // Addy Yeow
         };
+
+        bloomFiltersEnabled = true;
     }
 
     private static MainNetParams instance;

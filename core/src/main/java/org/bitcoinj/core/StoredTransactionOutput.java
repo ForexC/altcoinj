@@ -34,7 +34,7 @@ public class StoredTransactionOutput implements Serializable {
     private Coin value;
     private byte[] scriptBytes;
 
-    /** Hash of the transaction to which we refer. */
+    /** Sha256Hash of the transaction to which we refer. */
     private Sha256Hash hash;
     /** Which output of that transaction we are talking about. */
     private long index;

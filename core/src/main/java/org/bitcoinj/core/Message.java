@@ -289,7 +289,7 @@ public abstract class Message implements Serializable {
     }
 
     /**
-     * Serialize this message to a byte array that conforms to the bitcoin wire protocol.
+     * Serialize this message to a byte array that conforms to the bitcoinj wire protocol.
      * <br/>
      * This method may return the original byte array used to construct this message if the
      * following conditions are met:
@@ -352,7 +352,7 @@ public abstract class Message implements Serializable {
     }
 
     /**
-     * Serialize this message to the provided OutputStream using the bitcoin wire format.
+     * Serialize this message to the provided OutputStream using the bitcoinj wire format.
      *
      * @param stream
      * @throws IOException

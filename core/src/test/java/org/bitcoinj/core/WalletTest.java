@@ -1304,6 +1304,7 @@ public class WalletTest extends TestWithWallet {
                     }
                 }
         );
+
         ECKey key = wallet.freshReceiveKey();
         Sha256Hash hash2 = Sha256Hash.hashFileContents(f);
         assertFalse(hash1.equals(hash2));  // File has changed immediately despite the delay, as keys are important.

@@ -1422,8 +1422,8 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
      */
     @Override
     public boolean notifyTransactionIsInBlock(Sha256Hash txHash, StoredBlock block,
-                                              BlockChain.NewBlockType blockType,
-                                              int relativityOffset) throws VerificationException {
+                                           BlockChain.NewBlockType blockType,
+                                           int relativityOffset) throws VerificationException {
         lock.lock();
         try {
             Transaction tx = transactions.get(txHash);
@@ -2771,6 +2771,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
     /******************************************************************************************************************/
 
+
     //region Balance and balance futures
 
     /**
@@ -2835,7 +2836,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         try {
             checkNotNull(selector);
             LinkedList<TransactionOutput> candidates = calculateAllSpendCandidates(true);
-            CoinSelection selection = selector.select(NetworkParameters.MAX_MONEY, candidates);
+            CoinSelection selection = selector.select(CoinSelector.ALL, candidates);
             return selection.valueGathered;
         } finally {
             lock.unlock();
@@ -2856,7 +2857,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         try {
             checkNotNull(selector);
             List<TransactionOutput> candidates = getWatchedOutputs(true);
-            CoinSelection selection = selector.select(NetworkParameters.MAX_MONEY, candidates);
+            CoinSelection selection = selector.select(CoinSelector.ALL, candidates);
             return selection.valueGathered;
         } finally {
             lock.unlock();
@@ -3436,7 +3437,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
                 // of the total value we can currently spend as determined by the selector, and then subtracting the fee.
                 checkState(req.tx.getOutputs().size() == 1, "Empty wallet TX must have a single output only.");
                 CoinSelector selector = req.coinSelector == null ? coinSelector : req.coinSelector;
-                bestCoinSelection = selector.select(NetworkParameters.MAX_MONEY, candidates);
+                bestCoinSelection = selector.select(CoinSelector.ALL, candidates);
                 candidates = null;  // Selector took ownership and might have changed candidates. Don't access again.
                 req.tx.getOutput(0).setValue(bestCoinSelection.valueGathered);
                 log.info("  emptying {}", bestCoinSelection.valueGathered.toFriendlyString());

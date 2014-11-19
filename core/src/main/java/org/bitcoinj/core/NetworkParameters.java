@@ -21,6 +21,8 @@ import org.bitcoinj.params.*;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptOpCodes;
 import com.google.common.base.Objects;
+import org.bitcoinj.store.BlockStore;
+import org.bitcoinj.store.BlockStoreException;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +44,7 @@ public abstract class NetworkParameters implements Serializable {
     /**
      * The protocol version this library implements.
      */
-    public static final int PROTOCOL_VERSION = 70001;
+    public static final int PROTOCOL_VERSION = 70002;
 
     /**
      * The alert signing key originally owned by Satoshi, and now passed on to Gavin along with a few others.
@@ -50,11 +52,11 @@ public abstract class NetworkParameters implements Serializable {
     public static final byte[] SATOSHI_KEY = Utils.HEX.decode("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
 
     /** The string returned by getId() for the main, production network where people trade things. */
-    public static final String ID_MAINNET = "org.bitcoin.production";
+    public static final String ID_MAINNET = "org.bitcoinj.production";
     /** The string returned by getId() for the testnet. */
-    public static final String ID_TESTNET = "org.bitcoin.test";
+    public static final String ID_TESTNET = "org.bitcoinj.test";
     /** The string returned by getId() for regtest mode. */
-    public static final String ID_REGTEST = "org.bitcoin.regtest";
+    public static final String ID_REGTEST = "org.bitcoinj.regtest";
     /** Unit test network. */
     public static final String ID_UNITTESTNET = "org.bitcoinj.unittest";
 
@@ -65,7 +67,9 @@ public abstract class NetworkParameters implements Serializable {
 
     // TODO: Seed nodes should be here as well.
 
+    protected Coin maxMoney;
     protected Block genesisBlock;
+    protected ProofOfWork proofOfWork;
     protected BigInteger maxTarget;
     protected int port;
     protected long packetMagic;  // Indicates message origin network and is used to seek to the next message when stream state is unknown.
@@ -73,8 +77,12 @@ public abstract class NetworkParameters implements Serializable {
     protected int p2shHeader;
     protected int dumpedPrivateKeyHeader;
     protected int interval;
+    protected int intervalOffset = 0;
     protected int targetTimespan;
+    protected int targetSpacing;
     protected byte[] alertSigningKey;
+
+    protected boolean bloomFiltersEnabled;
 
     /**
      * See getId(). This may be null for old deserialized wallets. In that case we derive it heuristically
@@ -92,24 +100,111 @@ public abstract class NetworkParameters implements Serializable {
     protected String[] dnsSeeds;
     protected Map<Integer, Sha256Hash> checkpoints = new HashMap<Integer, Sha256Hash>();
 
-    protected NetworkParameters() {
-        alertSigningKey = SATOSHI_KEY;
-        genesisBlock = createGenesis(this);
+    /**
+     * Verifies block difficulty.
+     * Throws a {@link org.bitcoinj.core.VerificationException} if the difficulty is invalid.
+     */
+    public void checkDifficulty(StoredBlock storedPrev, Block nextBlock, BlockStore blockStore)
+    throws BlockStoreException, VerificationException {
+        Block prev = storedPrev.getHeader();
+
+        // Is this supposed to be a difficulty transition point?
+        if (!shouldRetarget(storedPrev)) {
+            // No ... so check the difficulty didn't actually change.
+            if (nextBlock.getDifficultyTarget() != prev.getDifficultyTarget())
+                throw new VerificationException("Unexpected change in difficulty at height " + storedPrev.getHeight() +
+                        ": " + Long.toHexString(nextBlock.getDifficultyTarget()) + " vs " +
+                        Long.toHexString(prev.getDifficultyTarget()));
+            return;
+        }
+
+        int timespan = getTimespan(storedPrev, blockStore);
+
+        BigInteger newTarget = Utils.decodeCompactBits(prev.getDifficultyTarget());
+        newTarget = newTarget.multiply(BigInteger.valueOf(timespan));
+        newTarget = newTarget.divide(BigInteger.valueOf(getTargetTimespan(storedPrev.getHeight())));
+
+        if (newTarget.compareTo(maxTarget) > 0) {
+            //log.info("Difficulty hit proof of work limit: {}", newTarget.toString(16));
+            newTarget = maxTarget;
+        }
+
+        int accuracyBytes = (int) (nextBlock.getDifficultyTarget() >>> 24) - 3;
+        long receivedTargetCompact = nextBlock.getDifficultyTarget();
+
+        // The calculated difficulty is to a higher precision than received, so reduce here.
+        BigInteger mask = BigInteger.valueOf(0xFFFFFFL).shiftLeft(accuracyBytes * 8);
+        newTarget = newTarget.and(mask);
+        long newTargetCompact = Utils.encodeCompactBits(newTarget);
+
+        if (newTargetCompact != receivedTargetCompact)
+            throw new VerificationException("Network provided difficulty bits do not match what was calculated: " +
+                    newTargetCompact + " vs " + receivedTargetCompact);
     }
 
-    private static Block createGenesis(NetworkParameters n) {
+    /** Return true when the difficulty should be adjusted. */
+    protected boolean shouldRetarget(StoredBlock storedPrev) {
+        return ((storedPrev.getHeight() + 1) % getInterval(storedPrev.getHeight()) == 0);
+    }
+
+    /** How many blocks pass between difficulty adjustment periods. Bitcoin standardises this to be 2015. */
+    public int getInterval(int height) {
+        return interval;
+    }
+
+    /**
+     * How much time in seconds is supposed to pass between "interval" blocks. If the actual elapsed time is
+     * significantly different from this value, the network difficulty formula will produce a different value. Both
+     * test and production Bitcoin networks use 2 weeks (1209600 seconds).
+     */
+    protected int getTargetTimespan(int height) {
+      return targetTimespan;
+    }
+
+    /** Measures the actual timespan since the last retarget. */
+    protected int getTimespan(StoredBlock storedPrev, BlockStore blockStore)
+    throws BlockStoreException, VerificationException {
+        Block prev = storedPrev.getHeader();
+
+        // We need to find a block far back in the chain. It's OK that this is expensive because it only occurs every
+        // two weeks after the initial block chain download.
+        long now = System.currentTimeMillis();
+        StoredBlock cursor = blockStore.get(prev.getHash());
+        for (int i = 0; i < getInterval(storedPrev.getHeight()) - 1 + intervalOffset; i++) {
+            if (cursor == null) {
+                // This should never happen. If it does, it means we are following an incorrect or busted chain.
+                throw new VerificationException(
+                        "Difficulty transition point but we did not find a way back to the genesis block.");
+            }
+            cursor = blockStore.get(cursor.getHeader().getPrevBlockHash());
+        }
+
+        Block blockIntervalAgo = cursor.getHeader();
+        int timespan = (int) (prev.getTimeSeconds() - blockIntervalAgo.getTimeSeconds());
+        // Limit the adjustment step.
+        int targetTimespan = getTargetTimespan(storedPrev.getHeight());
+        if (timespan < targetTimespan / 4)
+            timespan = targetTimespan / 4;
+        if (timespan > targetTimespan * 4)
+            timespan = targetTimespan * 4;
+
+        return timespan;
+    }
+
+
+    protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey) {
+        return createGenesis(n, input, scriptPubKey, null);
+    }
+
+    protected static Block createGenesis(NetworkParameters n, byte[] input, byte[] scriptPubKey, Sha256Hash root) {
         Block genesisBlock = new Block(n);
         Transaction t = new Transaction(n);
         try {
             // A script containing the difficulty bits and the following message:
             //
-            //   "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"
-            byte[] bytes = Utils.HEX.decode
-                    ("04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73");
-            t.addInput(new TransactionInput(n, t, bytes));
+            t.addInput(new TransactionInput(n, t, input));
             ByteArrayOutputStream scriptPubKeyBytes = new ByteArrayOutputStream();
-            Script.writeBytes(scriptPubKeyBytes, Utils.HEX.decode
-                    ("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f"));
+            Script.writeBytes(scriptPubKeyBytes, scriptPubKey);
             scriptPubKeyBytes.write(ScriptOpCodes.OP_CHECKSIG);
             t.addOutput(new TransactionOutput(n, t, FIFTY_COINS, scriptPubKeyBytes.toByteArray()));
         } catch (Exception e) {
@@ -117,12 +212,10 @@ public abstract class NetworkParameters implements Serializable {
             throw new RuntimeException(e);
         }
         genesisBlock.addTransaction(t);
+        if(root != null) genesisBlock.setMerkleRoot(root);
         return genesisBlock;
     }
 
-    public static final int TARGET_TIMESPAN = 14 * 24 * 60 * 60;  // 2 weeks per difficulty cycle, on average.
-    public static final int TARGET_SPACING = 10 * 60;  // 10 minutes per block.
-    public static final int INTERVAL = TARGET_TIMESPAN / TARGET_SPACING;
     
     /**
      * Blocks with a timestamp after this should enforce BIP 16, aka "Pay to script hash". This BIP changed the
@@ -130,16 +223,6 @@ public abstract class NetworkParameters implements Serializable {
      * mined upon and thus will be quickly re-orged out as long as the majority are enforcing the rule.
      */
     public static final int BIP16_ENFORCE_TIME = 1333238400;
-    
-    /**
-     * The maximum number of coins to be generated
-     */
-    public static final long MAX_COINS = 21000000;
-
-    /**
-     * The maximum money to be generated
-     */
-    public static final Coin MAX_MONEY = COIN.multiply(MAX_COINS);
 
     /** Alias for TestNet3Params.get(), use that instead. */
     @Deprecated
@@ -303,15 +386,6 @@ public abstract class NetworkParameters implements Serializable {
     }
 
     /**
-     * How much time in seconds is supposed to pass between "interval" blocks. If the actual elapsed time is
-     * significantly different from this value, the network difficulty formula will produce a different value. Both
-     * test and production Bitcoin networks use 2 weeks (1209600 seconds).
-     */
-    public int getTargetTimespan() {
-        return targetTimespan;
-    }
-
-    /**
      * The version codes that prefix addresses which are acceptable on this network. Although Satoshi intended these to
      * be used for "versioning", in fact they are today used to discriminate what kind of data is contained in the
      * address and to prevent accidentally sending coins across chains which would destroy them.
@@ -337,6 +411,8 @@ public abstract class NetworkParameters implements Serializable {
         return maxTarget;
     }
 
+    public ProofOfWork getProofOfWork() { return proofOfWork; }
+
     /**
      * The key used to sign {@link org.bitcoinj.core.AlertMessage}s. You can use {@link org.bitcoinj.core.ECKey#verify(byte[], byte[], byte[])} to verify
      * signatures using it.
@@ -344,4 +420,8 @@ public abstract class NetworkParameters implements Serializable {
     public byte[] getAlertSigningKey() {
         return alertSigningKey;
     }
+
+    public Coin getMaxMoney() { return maxMoney; }
+
+    public boolean getBloomFiltersEnabled() { return bloomFiltersEnabled; }
 }

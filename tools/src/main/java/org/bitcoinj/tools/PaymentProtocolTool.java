@@ -36,11 +36,11 @@ import java.util.concurrent.ExecutionException;
 
 import static java.lang.String.format;
 
-/** Takes a URL or bitcoin URI and prints information about the payment request. */
+/** Takes a URL or bitcoinj URI and prints information about the payment request. */
 public class PaymentProtocolTool {
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.err.println("Provide a bitcoin URI or URL as the argument.");
+            System.err.println("Provide a bitcoinj URI or URL as the argument.");
             return;
         }
         dump(args[0]);
@@ -57,11 +57,11 @@ public class PaymentProtocolTool {
                 session = new PaymentSession(request);
             } else if (uri.getScheme().equals("http")) {
                 session = PaymentSession.createFromUrl(arg).get();
-            } else if (uri.getScheme().equals("bitcoin")) {
+            } else if (uri.getScheme().equals("bitcoinj")) {
                 BitcoinURI bcuri = new BitcoinURI(arg);
                 final String paymentRequestUrl = bcuri.getPaymentRequestUrl();
                 if (paymentRequestUrl == null) {
-                    System.err.println("No r= param in bitcoin URI");
+                    System.err.println("No r= param in bitcoinj URI");
                     return;
                 }
                 session = PaymentSession.createFromBitcoinUri(bcuri).get();

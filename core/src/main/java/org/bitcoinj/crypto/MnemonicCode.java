@@ -38,7 +38,7 @@ import static org.bitcoinj.core.Utils.HEX;
 
 /**
  * A MnemonicCode object may be used to convert between binary seed values and
- * lists of words per <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">the BIP 39
+ * lists of words per <a href="https://github.com/bitcoinj/bips/blob/master/bip-0039.mediawiki">the BIP 39
  * specification</a>
  */
 

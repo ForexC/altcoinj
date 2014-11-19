@@ -725,7 +725,7 @@ public class FullBlockTestGenerator {
             }
             b39p2shScriptPubKey = p2shScriptPubKey.toByteArray();
             
-            byte[] scriptHash = Utils.sha256hash160(b39p2shScriptPubKey);
+            byte[] scriptHash = Utils.Hash160(b39p2shScriptPubKey);
             UnsafeByteArrayOutputStream scriptPubKey = new UnsafeByteArrayOutputStream(scriptHash.length + 3);
             scriptPubKey.write(OP_HASH160);
             try {

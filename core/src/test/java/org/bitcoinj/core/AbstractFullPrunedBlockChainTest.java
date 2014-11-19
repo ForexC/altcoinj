@@ -52,7 +52,7 @@ public abstract class AbstractFullPrunedBlockChainTest
     public void setUp() throws Exception {
         BriefLogFormatter.init();
         params = new UnitTestParams() {
-            @Override public int getInterval() {
+            @Override public int getInterval(int height) {
                 return 10000;
             }
         };
