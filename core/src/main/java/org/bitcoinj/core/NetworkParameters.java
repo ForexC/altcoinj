@@ -80,6 +80,8 @@ public abstract class NetworkParameters implements Serializable {
     protected byte[] alertSigningKey;
     protected int protocolVersion = PROTOCOL_VERSION_DEFAULT;
 
+    protected boolean auxPowEnabled = false;
+
     protected boolean bloomFiltersEnabled;
 
     /**
@@ -422,6 +424,8 @@ public abstract class NetworkParameters implements Serializable {
     public Coin getMaxMoney() { return maxMoney; }
 
     public boolean getBloomFiltersEnabled() { return bloomFiltersEnabled; }
+
+    public boolean getAuxPowEnabled() { return auxPowEnabled; }
 
     public int getProtocolVersion() { return protocolVersion; }
 }

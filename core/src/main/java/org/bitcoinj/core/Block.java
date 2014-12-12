@@ -256,7 +256,7 @@ public class Block extends Message {
     void parse() throws ProtocolException {
         parseHeader();
         // We have at least 2 headers in an Aux block. Workaround for StoredBlocks
-        if (version == BLOCK_VERSION_AUXPOW_AUXBLOCK && payload.length >= 160) {
+        if (hasAuxPow() && payload.length >= 160) {
             parseAuxData();
         }
         parseTransactions();
@@ -597,7 +597,7 @@ public class Block extends Message {
         block.difficultyTarget = difficultyTarget;
         block.transactions = null;
         block.hash = getHash().duplicate();
-        if (version == BLOCK_VERSION_AUXPOW_AUXBLOCK) {
+        if (hasAuxPow()) {
             block.parentBlock = parentBlock;
         }
         return block;
@@ -683,6 +683,10 @@ public class Block extends Message {
         //
         // To prevent this attack from being possible, elsewhere we check that the difficultyTarget
         // field is of the right value. This requires us to have the preceeding blocks.
+
+        if(hasAuxPow() && !params.auxPowEnabled)
+            return false;
+
         return params.getProofOfWork().check(this, throwException);
     }
 
@@ -976,8 +980,14 @@ public class Block extends Message {
        return ImmutableList.copyOf(transactions);
     }
 
+    /** Returns the AuxPoW parent block */
     public Block getParentBlock() {
         return parentBlock;
+    }
+
+    /** Returns true if the block contains an AuxPoW parent block */
+    public boolean hasAuxPow() {
+        return version == BLOCK_VERSION_AUXPOW_AUXBLOCK;
     }
 
     // ///////////////////////////////////////////////////////////////////////////////////////////////

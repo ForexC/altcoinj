@@ -15,7 +15,7 @@ public abstract class ProofOfWork implements Serializable {
 
     public Sha256Hash getHash(Block block) {
         Block b = block;
-        if(block.getVersion() == Block.BLOCK_VERSION_AUXPOW_AUXBLOCK) {
+        if(block.hasAuxPow()) {
             b = block.getParentBlock();
         }
 
