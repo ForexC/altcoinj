@@ -74,6 +74,11 @@ public class Block extends Message {
     /** A value for difficultyTarget (nBits) that allows half of all possible hash solutions. Used in unit testing. */
     public static final long EASIEST_DIFFICULTY_TARGET = 0x207fFFFFL;
 
+    // Block versions for AuxPoW
+    public static final int BLOCK_VERSION_DEFAULT = 0x00000002;
+    public static final int BLOCK_VERSION_AUXPOW = 0x00620002;
+    public static final int BLOCK_VERSION_AUXPOW_AUXBLOCK = 0x00620102;
+
     // Fields defined as part of the protocol format.
     private long version;
     private Sha256Hash prevBlockHash;
@@ -81,6 +86,9 @@ public class Block extends Message {
     private long time;
     private long difficultyTarget; // "nBits"
     private long nonce;
+
+    // The parent block header for AuxPoW blocks
+    private Block parentBlock;
 
     /** If null, it means this object holds only the headers. */
     List<Transaction> transactions;
@@ -93,7 +101,7 @@ public class Block extends Message {
 
     private transient boolean headerBytesValid;
     private transient boolean transactionBytesValid;
-    
+
     // Blocks can be encoded in a way that will use more bytes than is optimal (due to VarInts having multiple encodings)
     // MAX_BLOCK_SIZE must be compared to the optimal encoding, not the actual encoding, so when parsing, we keep track
     // of the size of the ideal encoding in addition to the actual message size (which Message needs)
@@ -116,12 +124,18 @@ public class Block extends Message {
         super(params, payloadBytes, 0, false, false, payloadBytes.length);
     }
 
+    /** Constructs a block object from the Bitcoin wire format. */
+    public Block(NetworkParameters params, byte[] payloadBytes, Block parentBlock) throws ProtocolException {
+        super(params, payloadBytes, 0, false, false, payloadBytes.length);
+        this.parentBlock = parentBlock;
+    }
+
     /**
      * Contruct a block object from the Bitcoin wire format.
      * @param params NetworkParameters object.
      * @param parseLazy Whether to perform a full parse immediately or delay until a read is requested.
-     * @param parseRetain Whether to retain the backing byte array for quick reserialization.  
-     * If true and the backing byte array is invalidated due to modification of a field then 
+     * @param parseRetain Whether to retain the backing byte array for quick reserialization.
+     * If true and the backing byte array is invalidated due to modification of a field then
      * the cached bytes may be repopulated and retained if the message is serialized again in the future.
      * @param length The length of message if known.  Usually this is provided when deserializing of the wire
      * as the length will be provided as part of the header.  If unknown then set to Message.UNKNOWN_LENGTH
@@ -132,6 +146,11 @@ public class Block extends Message {
         super(params, payloadBytes, 0, parseLazy, parseRetain, length);
     }
 
+    public Block(NetworkParameters params, byte[] payloadBytes, boolean parseLazy, boolean parseRetain, int length, Block parentBlock)
+        throws ProtocolException {
+        super(params, payloadBytes, 0, parseLazy, parseRetain, length);
+        this.parentBlock = parentBlock;
+    }
 
     /**
      * Construct a block initialized with all the given fields.
@@ -196,6 +215,13 @@ public class Block extends Message {
         headerBytesValid = parseRetain;
     }
 
+    private void parseAuxData() throws ProtocolException {
+        AuxPoWMessage auxPoWMessage = new AuxPoWMessage(payload, cursor);
+        auxPoWMessage.parse();
+        this.cursor = auxPoWMessage.cursor;
+        this.parentBlock = new Block(params, auxPoWMessage.constructParentHeader());
+    }
+
     private void parseTransactions() throws ProtocolException {
         if (transactionsParsed)
             return;
@@ -229,10 +255,14 @@ public class Block extends Message {
     @Override
     void parse() throws ProtocolException {
         parseHeader();
+        // We have at least 2 headers in an Aux block. Workaround for StoredBlocks
+        if (version == BLOCK_VERSION_AUXPOW_AUXBLOCK && payload.length >= 160) {
+            parseAuxData();
+        }
         parseTransactions();
         length = cursor - offset;
     }
-    
+
     public int getOptimalEncodingMessageSize() {
         if (optimalEncodingMessageSize != 0)
             return optimalEncodingMessageSize;
@@ -567,6 +597,9 @@ public class Block extends Message {
         block.difficultyTarget = difficultyTarget;
         block.transactions = null;
         block.hash = getHash().duplicate();
+        if (version == BLOCK_VERSION_AUXPOW_AUXBLOCK) {
+            block.parentBlock = parentBlock;
+        }
         return block;
     }
 
@@ -941,6 +974,10 @@ public class Block extends Message {
     public List<Transaction> getTransactions() {
        maybeParseTransactions();
        return ImmutableList.copyOf(transactions);
+    }
+
+    public Block getParentBlock() {
+        return parentBlock;
     }
 
     // ///////////////////////////////////////////////////////////////////////////////////////////////

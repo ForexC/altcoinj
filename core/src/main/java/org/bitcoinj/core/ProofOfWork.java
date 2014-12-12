@@ -14,9 +14,14 @@ public abstract class ProofOfWork implements Serializable {
     protected abstract Sha256Hash hash(byte[] header);
 
     public Sha256Hash getHash(Block block) {
+        Block b = block;
+        if(block.getVersion() == Block.BLOCK_VERSION_AUXPOW_AUXBLOCK) {
+            b = block.getParentBlock();
+        }
+
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(Block.HEADER_SIZE);
-            block.writeHeader(bos);
+            b.writeHeader(bos);
             return hash(bos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
