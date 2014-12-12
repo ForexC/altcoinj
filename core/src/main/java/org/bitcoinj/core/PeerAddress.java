@@ -86,7 +86,7 @@ public class PeerAddress extends ChildMessage {
      * Constructs a peer address from the given IP address and port. Protocol version is the default.
      */
     public PeerAddress(InetAddress addr, int port) {
-        this(addr, port, NetworkParameters.PROTOCOL_VERSION);
+        this(addr, port, NetworkParameters.PROTOCOL_VERSION_DEFAULT);
     }
 
     /**

@@ -42,11 +42,6 @@ import static org.bitcoinj.core.Coin.*;
  */
 public abstract class NetworkParameters implements Serializable {
     /**
-     * The protocol version this library implements.
-     */
-    public static final int PROTOCOL_VERSION = 70002;
-
-    /**
      * The alert signing key originally owned by Satoshi, and now passed on to Gavin along with a few others.
      */
     public static final byte[] SATOSHI_KEY = Utils.HEX.decode("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284");
@@ -65,6 +60,8 @@ public abstract class NetworkParameters implements Serializable {
     /** The string used by the payment protocol to represent the test net. */
     public static final String PAYMENT_PROTOCOL_ID_TESTNET = "test";
 
+    public static final int PROTOCOL_VERSION_DEFAULT = 70002;
+
     // TODO: Seed nodes should be here as well.
 
     protected Coin maxMoney;
@@ -81,6 +78,7 @@ public abstract class NetworkParameters implements Serializable {
     protected int targetTimespan;
     protected int targetSpacing;
     protected byte[] alertSigningKey;
+    protected int protocolVersion = PROTOCOL_VERSION_DEFAULT;
 
     protected boolean bloomFiltersEnabled;
 
@@ -424,4 +422,6 @@ public abstract class NetworkParameters implements Serializable {
     public Coin getMaxMoney() { return maxMoney; }
 
     public boolean getBloomFiltersEnabled() { return bloomFiltersEnabled; }
+
+    public int getProtocolVersion() { return protocolVersion; }
 }

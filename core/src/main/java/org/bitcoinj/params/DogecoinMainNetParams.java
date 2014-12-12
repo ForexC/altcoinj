@@ -61,6 +61,7 @@ public class DogecoinMainNetParams extends NetworkParameters {
         String genesisHash = genesisBlock.getHashAsString();
         checkState(genesisHash.equals("1a91e3dace36e2be3bf030a65679fe821aa1d6ef92e7c9902eb318182c355691"),
                 genesisHash);
+        protocolVersion = 70003;
 
         dnsSeeds = new String[] {
                 "seed.dogecoin.com",
