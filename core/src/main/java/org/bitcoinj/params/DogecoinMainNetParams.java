@@ -40,6 +40,7 @@ public class DogecoinMainNetParams extends NetworkParameters {
 
     public DogecoinMainNetParams() {
         maxMoney = null;
+        minFee = Coin.COIN;
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY);
         if(proofOfWorkInstance == null)

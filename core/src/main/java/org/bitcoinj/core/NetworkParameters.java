@@ -81,8 +81,8 @@ public abstract class NetworkParameters implements Serializable {
     protected int protocolVersion = PROTOCOL_VERSION_DEFAULT;
 
     protected boolean auxPowEnabled = false;
-
     protected boolean bloomFiltersEnabled;
+    protected Coin minFee = Coin.ZERO;
 
     /**
      * See getId(). This may be null for old deserialized wallets. In that case we derive it heuristically
@@ -428,4 +428,6 @@ public abstract class NetworkParameters implements Serializable {
     public boolean getAuxPowEnabled() { return auxPowEnabled; }
 
     public int getProtocolVersion() { return protocolVersion; }
+
+    public Coin getMinFee() { return minFee; }
 }

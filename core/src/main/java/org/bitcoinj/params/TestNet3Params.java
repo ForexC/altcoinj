@@ -29,6 +29,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class TestNet3Params extends TestNet2Params {
     public TestNet3Params() {
         maxMoney = Coin.COIN.multiply(21000000);
+        minFee = Coin.valueOf(10000);
         alertSigningKey = SATOSHI_KEY;
         genesisBlock = createGenesis(this, MainNetParams.GENESIS_INPUT, MainNetParams.GENESIS_SCRIPTPUBKEY);
         id = ID_TESTNET;
@@ -60,6 +61,7 @@ public class TestNet3Params extends TestNet2Params {
         };
         
         bloomFiltersEnabled = true;
+        protocolVersion = 70002;
     }
 
     private static TestNet3Params instance;

@@ -40,6 +40,7 @@ public class MainNetParams extends NetworkParameters {
 
     public MainNetParams() {
         maxMoney = Coin.COIN.multiply(21000000);
+        minFee = Coin.valueOf(10000);
         alertSigningKey = SATOSHI_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY);
         interval = INTERVAL;

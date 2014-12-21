@@ -42,6 +42,7 @@ public class LitecoinMainNetParams extends NetworkParameters {
 
     public LitecoinMainNetParams() {
         maxMoney = Coin.COIN.multiply(84000000);
+        minFee = Coin.valueOf(100000);
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = INTERVAL;
