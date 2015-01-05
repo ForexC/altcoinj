@@ -27,7 +27,7 @@
 
     <artifactId>bitcoinj-core</artifactId>
 
-    <name>bitcoinj</name>
+    <name>altcoinj</name>
     <description>A Java Bitcoin library</description>
 
     <packaging>jar</packaging>
