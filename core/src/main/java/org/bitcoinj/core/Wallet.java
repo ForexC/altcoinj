@@ -3103,7 +3103,9 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
         // Tracks if this has been passed to wallet.completeTx already: just a safety check.
         private boolean completed;
 
-        private SendRequest() {}
+        private SendRequest(NetworkParameters parameters) {
+            feePerKb = parameters.getMinFee();
+        }
 
         /**
          * <p>Creates a new SendRequest to the given address for the given value.</p>
@@ -3112,9 +3114,9 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
          * likely be rejected by the network in this case.</p>
          */
         public static SendRequest to(Address destination, Coin value) {
-            SendRequest req = new SendRequest();
             final NetworkParameters parameters = destination.getParameters();
             checkNotNull(parameters, "Address is for an unknown network");
+            SendRequest req = new SendRequest(parameters);
             req.tx = new Transaction(parameters);
             req.tx.addOutput(value, destination);
             return req;
@@ -3129,7 +3131,7 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
          * in a smaller output, and thus the ability to use a smaller output value without rejection.</p>
          */
         public static SendRequest to(NetworkParameters params, ECKey destination, Coin value) {
-            SendRequest req = new SendRequest();
+            SendRequest req = new SendRequest(params);
             req.tx = new Transaction(params);
             req.tx.addOutput(value, destination);
             return req;
@@ -3137,15 +3139,15 @@ public class Wallet extends BaseTaggableObject implements Serializable, BlockCha
 
         /** Simply wraps a pre-built incomplete transaction provided by you. */
         public static SendRequest forTx(Transaction tx) {
-            SendRequest req = new SendRequest();
+            SendRequest req = new SendRequest(tx.getParams());
             req.tx = tx;
             return req;
         }
 
         public static SendRequest emptyWallet(Address destination) {
-            SendRequest req = new SendRequest();
             final NetworkParameters parameters = destination.getParameters();
             checkNotNull(parameters, "Address is for an unknown network");
+            SendRequest req = new SendRequest(parameters);
             req.tx = new Transaction(parameters);
             req.tx.addOutput(Coin.ZERO, destination);
             req.emptyWallet = true;
