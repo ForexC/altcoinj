@@ -218,8 +218,9 @@ public class CheckpointManager {
 
         BufferedInputStream stream = new BufferedInputStream(checkpoints);
         CheckpointManager manager = new CheckpointManager(params, stream);
-        StoredBlock checkpoint = manager.getCheckpointBefore(time);
-        store.put(checkpoint);
-        store.setChainHead(checkpoint);
+        for(StoredBlock block : manager.checkpoints.values()) {
+            store.put(block);
+            store.setChainHead(block);
+        }
     }
 }

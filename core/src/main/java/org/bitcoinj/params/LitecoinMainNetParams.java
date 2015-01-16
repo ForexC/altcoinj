@@ -16,11 +16,10 @@
 
 package org.bitcoinj.params;
 
-import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.Sha256Hash;
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.core.Utils;
+import org.bitcoinj.core.*;
 import org.bitcoinj.pows.ScryptProofOfWork;
+import org.bitcoinj.store.BlockStore;
+import org.bitcoinj.store.BlockStoreException;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -46,7 +45,6 @@ public class LitecoinMainNetParams extends NetworkParameters {
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = INTERVAL;
-        intervalOffset = 1;
         targetTimespan = TARGET_TIMESPAN;
         targetSpacing = TARGET_SPACING;
         if(proofOfWorkInstance == null)
@@ -77,6 +75,12 @@ public class LitecoinMainNetParams extends NetworkParameters {
         };
 
         bloomFiltersEnabled = false;
+    }
+
+    @Override
+    public int getIntervalOffset(int height) {
+        if(height <= interval + 1) return 0;
+        return 1;
     }
 
     private static LitecoinMainNetParams instance;

@@ -43,7 +43,6 @@ public class LitecoinTestNetParams extends TestNet2Params {
         alertSigningKey = ALERT_KEY;
         genesisBlock = createGenesis(this, GENESIS_INPUT, GENESIS_SCRIPTPUBKEY, GENESIS_ROOT);
         interval = LitecoinMainNetParams.INTERVAL;
-        intervalOffset = 1;
         targetTimespan = LitecoinMainNetParams.TARGET_TIMESPAN;
         targetSpacing = LitecoinMainNetParams.TARGET_SPACING;
         if(proofOfWorkInstance == null)
@@ -73,6 +72,12 @@ public class LitecoinTestNetParams extends TestNet2Params {
 
         bloomFiltersEnabled = false;
         diffDate = new Date(0);
+    }
+
+    @Override
+    public int getIntervalOffset(int height) {
+        if(height <= 2015) return 0;
+        else return 1;
     }
 
     private static LitecoinTestNetParams instance;
