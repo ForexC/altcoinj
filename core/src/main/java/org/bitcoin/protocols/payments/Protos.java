@@ -343,7 +343,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.Output.class, org.bitcoin.protocols.payments.Protos.Output.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.Output.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.Output.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -1361,7 +1361,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.PaymentDetails.class, org.bitcoin.protocols.payments.Protos.PaymentDetails.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.PaymentDetails.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.PaymentDetails.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -2847,7 +2847,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.PaymentRequest.class, org.bitcoin.protocols.payments.Protos.PaymentRequest.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.PaymentRequest.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.PaymentRequest.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -3584,7 +3584,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.X509Certificates.class, org.bitcoin.protocols.payments.Protos.X509Certificates.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.X509Certificates.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.X509Certificates.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -4375,7 +4375,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.Payment.class, org.bitcoin.protocols.payments.Protos.Payment.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.Payment.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.Payment.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -5521,7 +5521,7 @@ public final class Protos {
                 org.bitcoin.protocols.payments.Protos.PaymentACK.class, org.bitcoin.protocols.payments.Protos.PaymentACK.Builder.class);
       }
 
-      // Construct using org.bitcoinj.protocols.payments.Protos.PaymentACK.newBuilder()
+      // Construct using io.mappum.altcoinj.protocols.payments.Protos.PaymentACK.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }

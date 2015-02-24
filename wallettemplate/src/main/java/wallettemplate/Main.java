@@ -1,13 +1,13 @@
 package wallettemplate;
 
-import org.bitcoinj.core.NetworkParameters;
-import org.bitcoinj.kits.WalletAppKit;
-import org.bitcoinj.params.MainNetParams;
-import org.bitcoinj.params.RegTestParams;
-import org.bitcoinj.params.TestNet3Params;
-import org.bitcoinj.utils.BriefLogFormatter;
-import org.bitcoinj.utils.Threading;
-import org.bitcoinj.wallet.DeterministicSeed;
+import io.mappum.altcoinj.core.NetworkParameters;
+import io.mappum.altcoinj.kits.WalletAppKit;
+import io.mappum.altcoinj.params.MainNetParams;
+import io.mappum.altcoinj.params.RegTestParams;
+import io.mappum.altcoinj.params.TestNet3Params;
+import io.mappum.altcoinj.utils.BriefLogFormatter;
+import io.mappum.altcoinj.utils.Threading;
+import io.mappum.altcoinj.wallet.DeterministicSeed;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;

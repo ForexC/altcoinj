@@ -1,7 +1,7 @@
 package wallettemplate;
 
-import org.bitcoinj.crypto.MnemonicCode;
-import org.bitcoinj.wallet.DeterministicSeed;
+import io.mappum.altcoinj.crypto.MnemonicCode;
+import io.mappum.altcoinj.wallet.DeterministicSeed;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.Service;

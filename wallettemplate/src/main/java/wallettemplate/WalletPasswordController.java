@@ -1,6 +1,6 @@
 package wallettemplate;
 
-import org.bitcoinj.crypto.KeyCrypterScrypt;
+import io.mappum.altcoinj.crypto.KeyCrypterScrypt;
 import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import javafx.beans.property.ReadOnlyObjectProperty;

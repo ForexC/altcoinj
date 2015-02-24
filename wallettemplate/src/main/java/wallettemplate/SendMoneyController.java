@@ -1,6 +1,6 @@
 package wallettemplate;
 
-import org.bitcoinj.core.*;
+import io.mappum.altcoinj.core.*;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import javafx.event.ActionEvent;

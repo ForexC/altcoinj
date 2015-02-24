@@ -1,6 +1,6 @@
 package wallettemplate.utils;
 
-import org.bitcoinj.core.*;
+import io.mappum.altcoinj.core.*;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyDoubleProperty;
 import javafx.beans.property.ReadOnlyObjectProperty;

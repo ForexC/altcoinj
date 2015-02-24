@@ -16,11 +16,11 @@ my_address_text = "mzEjmna15T7DXj4HC9MBEG2UJzgFfEYtFo"
 # if it has a confirmed balance in it, then you can set it to 0.
 confirm_wait = 1
 
-from org.bitcoinj.core import *
+from io.mappum.altcoinj.core import *
 
-import org.bitcoinj.crypto.KeyCrypterException
-import org.bitcoinj.params.MainNetParams
-from org.bitcoinj.kits import WalletAppKit
+import io.mappum.altcoinj.crypto.KeyCrypterException
+import io.mappum.altcoinj.params.MainNetParams
+from io.mappum.altcoinj.kits import WalletAppKit
 
 from com.google.common.util.concurrent import FutureCallback
 from com.google.common.util.concurrent import Futures
