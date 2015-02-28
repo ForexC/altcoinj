@@ -71,8 +71,6 @@ public class LitecoinMainNetParams extends NetworkParameters {
             "dnsseed.koin-project.com",
             "dnsseed.weminemnc.com"
         };
-
-        bloomFiltersEnabled = false;
     }
 
     @Override

@@ -144,15 +144,13 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
 
         @Override
         public void onBlocksDownloaded(Peer peer, Block block, int blocksLeft) {
-            if(params.getBloomFiltersEnabled()) {
-                final double rate = checkNotNull(chain).getFalsePositiveRate();
-                final double target = bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE;
-                if (rate > target) {
-                    // TODO: Avoid hitting this path if the remote peer didn't acknowledge applying a new filter yet.
-                    if (log.isDebugEnabled())
-                        log.debug("Force update Bloom filter due to high false positive rate ({} vs {})", rate, target);
-                    recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
-                }
+            final double rate = checkNotNull(chain).getFalsePositiveRate();
+            final double target = bloomFilterMerger.getBloomFilterFPRate() * MAX_FP_RATE_INCREASE;
+            if (rate > target) {
+                // TODO: Avoid hitting this path if the remote peer didn't acknowledge applying a new filter yet.
+                if (log.isDebugEnabled())
+                    log.debug("Force update Bloom filter due to high false positive rate ({} vs {})", rate, target);
+                recalculateFastCatchupAndFilter(FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
             }
         }
     };
@@ -957,27 +955,25 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
 
             FilterMerger.Result result = bloomFilterMerger.calculate(ImmutableList.copyOf(peerFilterProviders));
 
-            if(params.getBloomFiltersEnabled()) {
-                boolean send;
-                switch (mode) {
-                    case SEND_IF_CHANGED: send = result.changed; break;
-                    case DONT_SEND: send = false; break;
-                    case FORCE_SEND_FOR_REFRESH: send = true; break;
-                    default: throw new UnsupportedOperationException();
-                }
-                if (send) {
-                    for (Peer peer : peers) {
-                        // Only query the mempool if this recalculation request is not in order to lower the observed FP
-                        // rate. There's no point querying the mempool when doing this because the FP rate can only go
-                        // down, and we will have seen all the relevant txns before: it's pointless to ask for them again.
-                        peer.setBloomFilter(result.filter, mode != FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
-                    }
-                    // Reset the false positive estimate so that we don't send a flood of filter updates
-                    // if the estimate temporarily overshoots our threshold.
-                    if (chain != null)
-                        chain.resetFalsePositiveEstimate();
-                }
+            boolean send;
+            switch (mode) {
+                case SEND_IF_CHANGED: send = result.changed; break;
+                case DONT_SEND: send = false; break;
+                case FORCE_SEND_FOR_REFRESH: send = true; break;
+                default: throw new UnsupportedOperationException();
             }
+            if (send) {
+                for (Peer peer : peers) {
+                    // Only query the mempool if this recalculation request is not in order to lower the observed FP
+                    // rate. There's no point querying the mempool when doing this because the FP rate can only go
+                    // down, and we will have seen all the relevant txns before: it's pointless to ask for them again.
+                    peer.setBloomFilter(result.filter, mode != FilterRecalculateMode.FORCE_SEND_FOR_REFRESH);
+                }
+                // Reset the false positive estimate so that we don't send a flood of filter updates
+                // if the estimate temporarily overshoots our threshold.
+                if (chain != null)
+                    chain.resetFalsePositiveEstimate();
+        }
 
             // Do this last so that bloomFilter is already set when it gets called.
             setFastCatchupTimeSecs(result.earliestKeyTimeSecs);
@@ -1148,7 +1144,7 @@ public class PeerGroup extends AbstractExecutionThreadService implements Transac
             // Give the peer a filter that can be used to probabilistically drop transactions that
             // aren't relevant to our wallet. We may still receive some false positives, which is
             // OK because it helps improve wallet privacy. Old nodes will just ignore the message.
-            if (params.bloomFiltersEnabled && bloomFilterMerger.getLastFilter() != null)
+            if (bloomFilterMerger.getLastFilter() != null)
                 peer.setBloomFilter(bloomFilterMerger.getLastFilter());
             // Link the peer to the memory pool so broadcast transactions have their confidence levels updated.
             peer.setDownloadData(false);

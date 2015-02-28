@@ -80,7 +80,6 @@ public abstract class NetworkParameters implements Serializable {
     protected int protocolVersion = PROTOCOL_VERSION_DEFAULT;
 
     protected boolean auxPowEnabled = false;
-    protected boolean bloomFiltersEnabled;
     protected Coin minFee = Coin.ZERO;
 
     /**
@@ -425,8 +424,6 @@ public abstract class NetworkParameters implements Serializable {
     }
 
     public Coin getMaxMoney() { return maxMoney; }
-
-    public boolean getBloomFiltersEnabled() { return bloomFiltersEnabled; }
 
     public boolean getAuxPowEnabled() { return auxPowEnabled; }
 

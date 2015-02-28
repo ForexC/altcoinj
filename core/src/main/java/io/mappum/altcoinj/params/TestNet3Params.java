@@ -59,8 +59,7 @@ public class TestNet3Params extends TestNet2Params {
                 "testnet-seed.bitcoin.schildbach.de", // Andreas Schildbach
                 "testnet-seed.bitcoin.petertodd.org"  // Peter Todd
         };
-        
-        bloomFiltersEnabled = true;
+
         protocolVersion = 70002;
     }
 

@@ -81,8 +81,6 @@ public class MainNetParams extends NetworkParameters {
                 "seed.bitcoinstats.com",       // Chris Decker
                 "seed.bitnodes.io",            // Addy Yeow
         };
-
-        bloomFiltersEnabled = true;
     }
 
     private static MainNetParams instance;

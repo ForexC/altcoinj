@@ -70,7 +70,6 @@ public class LitecoinTestNetParams extends TestNet2Params {
             "dnsseed.wemine-testnet.com"
         };
 
-        bloomFiltersEnabled = false;
         diffDate = new Date(0);
     }
 
