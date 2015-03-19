@@ -18,6 +18,7 @@
 package io.mappum.altcoinj.core;
 
 import io.mappum.altcoinj.params.*;
+import io.mappum.altcoinj.pows.Sha256ProofOfWork;
 import io.mappum.altcoinj.script.Script;
 import io.mappum.altcoinj.script.ScriptOpCodes;
 import com.google.common.base.Objects;
@@ -67,6 +68,7 @@ public abstract class NetworkParameters implements Serializable {
     protected Coin maxMoney;
     protected Block genesisBlock;
     protected ProofOfWork proofOfWork;
+    protected ProofOfWork hashFunction = Sha256ProofOfWork.get();
     protected BigInteger maxTarget;
     protected int port;
     protected long packetMagic;  // Indicates message origin network and is used to seek to the next message when stream state is unknown.

@@ -30,10 +30,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import static io.mappum.altcoinj.core.Coin.FIFTY_COINS;
 import static io.mappum.altcoinj.core.Utils.doubleDigest;
@@ -209,7 +206,8 @@ public class Block extends Message {
         difficultyTarget = readUint32();
         nonce = readUint32();
 
-        hash = new Sha256Hash(Utils.reverseBytes(Utils.doubleDigest(payload, offset, cursor)));
+        byte[] slice = Arrays.copyOfRange(payload, offset, cursor);
+        hash = params.hashFunction.hash(slice);
 
         headerParsed = true;
         headerBytesValid = parseRetain;
@@ -540,7 +538,7 @@ public class Block extends Message {
         try {
             ByteArrayOutputStream bos = new UnsafeByteArrayOutputStream(HEADER_SIZE);
             writeHeader(bos);
-            return new Sha256Hash(Utils.reverseBytes(doubleDigest(bos.toByteArray())));
+            return params.hashFunction.hash(bos.toByteArray());
         } catch (IOException e) {
             throw new RuntimeException(e); // Cannot happen.
         }
