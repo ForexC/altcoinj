@@ -268,8 +268,8 @@
                             <artifactItems>
                                 <artifactItem>
                                     <outputDirectory>target/test-classes/</outputDirectory>
-                                    <groupId>org.bitcoinj</groupId>
-                                    <artifactId>bitcoinj-core</artifactId>
+                                    <groupId>io.mappum</groupId>
+                                    <artifactId>altcoinj-core</artifactId>
                                     <version>${project.version}</version>
                                 </artifactItem>
                             </artifactItems>
