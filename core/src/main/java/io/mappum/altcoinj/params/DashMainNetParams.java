@@ -17,7 +17,6 @@
 package io.mappum.altcoinj.params;
 
 import io.mappum.altcoinj.core.*;
-import io.mappum.altcoinj.pows.ScryptProofOfWork;
 import io.mappum.altcoinj.pows.X11ProofOfWork;
 import io.mappum.altcoinj.store.BlockStore;
 import io.mappum.altcoinj.store.BlockStoreException;
@@ -29,7 +28,7 @@ import static com.google.common.base.Preconditions.checkState;
 /**
  * Parameters for the main production network on which people trade goods and services.
  */
-public class DarkcoinMainNetParams extends NetworkParameters {
+public class DashMainNetParams extends NetworkParameters {
     public static final byte[] GENESIS_INPUT = Utils.HEX.decode("04ffff001d01044c5957697265642030392f4a616e2f3230313420546865204772616e64204578706572696d656e7420476f6573204c6976653a204f76657273746f636b2e636f6d204973204e6f7720416363657074696e6720426974636f696e73");
     public static final byte[] GENESIS_SCRIPTPUBKEY = Utils.HEX.decode("41040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9ac");
     public static final Sha256Hash GENESIS_ROOT = new Sha256Hash("e0028eb9648db56b1ac77cf090b99048a8007e2bb64b68f092c03c7f56a662c7");
@@ -41,7 +40,7 @@ public class DarkcoinMainNetParams extends NetworkParameters {
 
     public static final byte[] ALERT_KEY = Utils.HEX.decode("048240a8748a80a286b270ba126705ced4f2ce5a7847b3610ea3c06513150dade2a8512ed5ea86320824683fc0818f0ac019214973e677acd1244f6d0571fc5103");
 
-    public DarkcoinMainNetParams() {
+    public DashMainNetParams() {
         maxMoney = Coin.COIN.multiply(22000000);
         minFee = Coin.valueOf(10000);
         alertSigningKey = ALERT_KEY;
@@ -57,7 +56,7 @@ public class DarkcoinMainNetParams extends NetworkParameters {
         acceptableAddressCodes = new int[] { addressHeader, p2shHeader };
         port = 9999;
         packetMagic = 0xbf0c6bbd;
-        protocolVersion = 70054;
+        protocolVersion = 70075;
         genesisBlock.setDifficultyTarget(0x1e0ffff0L);
         genesisBlock.setTime(1390095618L);
         genesisBlock.setNonce(28917698);
@@ -394,10 +393,10 @@ public class DarkcoinMainNetParams extends NetworkParameters {
         return true;
     }
 
-    private static DarkcoinMainNetParams instance;
-    public static synchronized DarkcoinMainNetParams get() {
+    private static DashMainNetParams instance;
+    public static synchronized DashMainNetParams get() {
         if (instance == null) {
-            instance = new DarkcoinMainNetParams();
+            instance = new DashMainNetParams();
         }
         return instance;
     }
